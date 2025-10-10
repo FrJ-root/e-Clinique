@@ -1,0 +1,44 @@
+services:
+  clinique-digitale:
+    build: .
+    container_name: clinique-digitale
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=clinique_db
+      - DB_USER=admin
+      - DB_PASSWORD=admin
+
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:15
+    container_name: clinique-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: clinique_db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: clinique-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5051:80"
+    depends_on:
+      - postgres
+
+
+volumes:
+  pgdata:
