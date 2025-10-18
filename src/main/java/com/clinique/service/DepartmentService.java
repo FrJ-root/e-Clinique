@@ -1,0 +1,115 @@
+package com.clinique.service;
+
+import java.util.List;
+import java.util.UUID;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import com.clinique.dto.DepartmentDTO;
+import com.clinique.entity.Department;
+import com.clinique.mapper.DepartmentMapper;
+import com.clinique.repository.DepartmentRepository;
+
+public class DepartmentService {
+
+    private final DepartmentRepository departmentRepository = new DepartmentRepository();
+
+    public DepartmentDTO create(DepartmentDTO departmentDTO) {
+        if (departmentDTO == null) {
+            throw new IllegalArgumentException("Department data cannot be null");
+        }
+
+        if (departmentDTO.getNom() == null || departmentDTO.getNom().trim().isEmpty()) {
+            throw new IllegalArgumentException("Department name is required");
+        }
+
+        Optional<Department> existingDepartment = departmentRepository.findByName(departmentDTO.getNom());
+        if (existingDepartment.isPresent()) {
+            throw new IllegalArgumentException("A department with this name already exists");
+        }
+
+        Department department = new Department();
+        department.setNom(departmentDTO.getNom());
+        department.setDescription(departmentDTO.getDescription());
+
+        String code = generateDepartmentCode(departmentDTO.getNom());
+        department.setCode(code);
+
+        Department savedDepartment = departmentRepository.save(department);
+        return DepartmentMapper.toDTO(savedDepartment);
+    }
+
+    private String generateDepartmentCode(String name) {
+        String prefix = name.substring(0, Math.min(3, name.length())).toUpperCase();
+        int randomSuffix = (int) (Math.random() * 900) + 100; // Random number between 100-999
+        return prefix + randomSuffix;
+    }
+
+    public DepartmentDTO update(DepartmentDTO departmentDTO) {
+        if (departmentDTO == null || departmentDTO.getId() == null) {
+            throw new IllegalArgumentException("Department ID is required for update");
+        }
+
+        if (departmentDTO.getNom() == null || departmentDTO.getNom().trim().isEmpty()) {
+            throw new IllegalArgumentException("Department name is required");
+        }
+
+        Optional<Department> departmentOpt = departmentRepository.findById(departmentDTO.getId());
+        if (departmentOpt.isEmpty()) {
+            throw new IllegalArgumentException("Department not found");
+        }
+
+        Department department = departmentOpt.get();
+
+        if (!department.getNom().equals(departmentDTO.getNom())) {
+            Optional<Department> existingWithSameName = departmentRepository.findByName(departmentDTO.getNom());
+            if (existingWithSameName.isPresent() && !existingWithSameName.get().getId().equals(departmentDTO.getId())) {
+                throw new IllegalArgumentException("A department with this name already exists");
+            }
+        }
+
+        department.setNom(departmentDTO.getNom());
+        department.setDescription(departmentDTO.getDescription());
+
+        if (department.getCode() == null || department.getCode().trim().isEmpty()) {
+            String generatedCode = generateDepartmentCode(departmentDTO.getNom());
+            department.setCode(generatedCode);
+        } else if (departmentDTO.getCode() != null && !departmentDTO.getCode().trim().isEmpty()) {
+            department.setCode(departmentDTO.getCode());
+        }
+
+        Department updatedDepartment = departmentRepository.save(department);
+        return DepartmentMapper.toDTO(updatedDepartment);
+    }
+
+    public DepartmentDTO findById(UUID id) {
+        Optional<Department> departmentOpt = departmentRepository.findById(id);
+        return departmentOpt.map(DepartmentMapper::toDTO).orElse(null);
+    }
+
+    public List<DepartmentDTO> findAll() {
+        return departmentRepository.findAll()
+                .stream()
+                .map(DepartmentMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    public boolean delete(UUID id) {
+        if (id == null) {
+            throw new IllegalArgumentException("Department ID is required for deletion");
+        }
+
+        Optional<Department> departmentOpt = departmentRepository.findById(id);
+        if (departmentOpt.isEmpty()) {
+            return false;
+        }
+
+        try {
+            departmentRepository.delete(departmentOpt.get());
+            return true;
+        } catch (Exception e) {
+            System.err.println("Error deleting department: " + e.getMessage());
+            return false;
+        }
+    }
+
+}

@@ -25,6 +25,8 @@ CREATE TABLE departments (
     description TEXT
 );
 
+ALTER TABLE departments ADD COLUMN code VARCHAR(50) NOT NULL UNIQUE;
+
 CREATE TABLE specialties (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     nom VARCHAR(100) NOT NULL,
@@ -53,6 +55,12 @@ CREATE TABLE doctors (
         REFERENCES specialties(id) ON DELETE SET NULL
 );
 
+ALTER TABLE doctors ADD COLUMN telephone VARCHAR(50);
+ALTER TABLE doctors ADD COLUMN presentation TEXT;
+ALTER TABLE doctors ADD COLUMN experience TEXT;
+ALTER TABLE doctors ADD COLUMN formation TEXT;
+ALTER TABLE doctors ADD COLUMN actif BOOLEAN NOT NULL DEFAULT TRUE;
+
 CREATE TABLE staffs (
     id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     matricule VARCHAR(50) UNIQUE NOT NULL,
@@ -63,14 +71,22 @@ CREATE TABLE staffs (
 CREATE TABLE availabilities (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     jour VARCHAR(20) NOT NULL,
-    heure_debut TIME NOT NULL,
-    heure_fin TIME NOT NULL,
     statut VARCHAR(20),
-    validite BOOLEAN DEFAULT TRUE,
     doctor_id UUID NOT NULL,
     CONSTRAINT fk_availability_doctor FOREIGN KEY (doctor_id)
         REFERENCES doctors(id) ON DELETE CASCADE
 );
+
+
+-- Add columns to support the enhanced availability functionality
+ALTER TABLE availabilities ADD COLUMN IF NOT EXISTS jour_semaine VARCHAR(20);
+ALTER TABLE availabilities ADD COLUMN IF NOT EXISTS type VARCHAR(20) DEFAULT 'REGULAR' NOT NULL;
+ALTER TABLE availabilities ADD COLUMN IF NOT EXISTS raison TEXT;
+-- Update existing records to use the new type field
+UPDATE availabilities SET type = 'REGULAR' WHERE type IS NULL;
+-- Create an index for faster lookups
+CREATE INDEX IF NOT EXISTS idx_availabilities_doctor_type ON availabilities(doctor_id, type);
+
 
 CREATE TABLE appointments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

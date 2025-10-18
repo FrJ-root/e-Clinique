@@ -49,8 +49,8 @@
             justify-content: center;
             transition: background-color 0.3s ease;
             position: relative;
-            overflow: hidden;
-            padding: 40px 0;
+            overflow-x: hidden;
+            padding: 60px 0;
         }
 
         /* Background Pattern */
@@ -598,23 +598,23 @@
             opacity: 0.7;
         }
 
-        /* Responsive */
+        /* Responsive Improvements */
         @media (max-width: 768px) {
             .register-container {
                 padding: 15px;
             }
 
             .register-header {
-                padding: 35px 25px;
+                padding: 30px 20px;
             }
 
             .register-body {
-                padding: 35px 25px;
+                padding: 30px 20px;
             }
 
             .form-row {
                 grid-template-columns: 1fr;
-                gap: 0;
+                gap: 20px;  /* Add gap between form groups in mobile */
             }
 
             .role-selection {
@@ -629,16 +629,80 @@
                 font-size: 1.5rem;
             }
 
+            .register-header p {
+                font-size: 0.9rem;
+            }
+
             .back-home, .theme-toggle {
                 top: 15px;
+                width: 40px;
+                height: 40px;
             }
 
             .back-home {
                 left: 15px;
             }
 
+            .back-home a {
+                padding: 8px 15px;
+                font-size: 0.9rem;
+            }
+
+            .back-home a span {
+                display: none;  /* Hide "Retour à l'accueil" text on small screens */
+            }
+
             .theme-toggle {
                 right: 15px;
+            }
+
+            .form-control, .form-select {
+                padding: 12px 16px 12px 45px;  /* Slightly smaller padding on mobile */
+                font-size: 16px;  /* Better for mobile input */
+            }
+
+            .input-icon {
+                left: 15px;
+            }
+
+            body {
+                padding: 80px 0 40px 0;  /* Extra top padding for floating buttons */
+            }
+
+            .form-label {
+                font-size: 0.9rem;
+            }
+
+            .terms-checkbox label {
+                font-size: 0.85rem;
+            }
+        }
+
+        /* Additional mobile optimization */
+        @media (max-width: 480px) {
+            .register-header {
+                padding: 25px 15px;
+            }
+
+            .register-header .brand i {
+                font-size: 2.2rem;
+            }
+
+            .register-header .brand span {
+                font-size: 1.5rem;
+            }
+
+            .register-header h2 {
+                font-size: 1.3rem;
+            }
+
+            .register-body {
+                padding: 25px 15px;
+            }
+
+            .btn-register {
+                font-size: 1rem;
+                padding: 14px;
             }
         }
 
@@ -701,168 +765,240 @@
     </button>
 
     <div class="register-container">
-        <div class="register-card">
-            <!-- Header -->
-            <div class="register-header">
-                <div class="brand">
-                    <i class="fas fa-heartbeat"></i>
-                    <span>e-Clinique</span>
+            <div class="register-card">
+                <!-- Header -->
+                <div class="register-header">
+                    <div class="brand">
+                        <i class="fas fa-heartbeat"></i>
+                        <span>e-Clinique</span>
+                    </div>
+                    <h2>Créer un Compte</h2>
+                    <p>Rejoignez-nous pour une meilleure gestion de votre santé</p>
                 </div>
-                <h2>Créer un Compte</h2>
-                <p>Rejoignez-nous pour une meilleure gestion de votre santé</p>
-            </div>
 
-            <!-- Body -->
-            <div class="register-body">
-                <!-- Error Message -->
-                <%
-                String error = (String) request.getAttribute("error");
-                if (error != null && !error.isEmpty()) {
-                %>
-                    <div class="alert alert-danger" role="alert">
-                        <i class="fas fa-exclamation-circle"></i>
-                        <%= error %>
-                    </div>
-                <% } %>
+                <!-- Body -->
+                <div class="register-body">
+                    <!-- Error Message -->
+                    <%
+                    String error = (String) request.getAttribute("error");
+                    if (error != null && !error.isEmpty()) {
+                    %>
+                        <div class="alert alert-danger" role="alert">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <%= error %>
+                        </div>
+                    <% } %>
 
-                <!-- Success Message -->
-                <%
-                String success = (String) request.getAttribute("success");
-                if (success != null && !success.isEmpty()) {
-                %>
-                    <div class="alert alert-success" role="alert">
-                        <i class="fas fa-check-circle"></i>
-                        <%= success %>
-                    </div>
-                <% } %>
+                    <!-- Success Message -->
+                    <%
+                    String success = (String) request.getAttribute("success");
+                    if (success != null && !success.isEmpty()) {
+                    %>
+                        <div class="alert alert-success" role="alert">
+                            <i class="fas fa-check-circle"></i>
+                            <%= success %>
+                        </div>
+                    <% } %>
 
-                <!-- Registration Form -->
-                <form method="post" action="${pageContext.request.contextPath}/register" id="registerForm">
-                    <!-- Name and Email Row -->
-                    <div class="form-row">
+                    <!-- Registration Form -->
+                    <form method="post" action="${pageContext.request.contextPath}/register" id="registerForm">
+                        <!-- Name and Email Row -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="nom" class="form-label">
+                                    Nom complet<span class="required">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <i class="fas fa-user input-icon"></i>
+                                    <input type="text"
+                                           class="form-control"
+                                           id="nom"
+                                           name="nom"
+                                           placeholder="Jean Dupont"
+                                           required
+                                           value="<%= request.getParameter("nom") != null ? request.getParameter("nom") : "" %>">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="email" class="form-label">
+                                    Adresse e-mail<span class="required">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <i class="fas fa-envelope input-icon"></i>
+                                    <input type="email"
+                                           class="form-control"
+                                           id="email"
+                                           name="email"
+                                           placeholder="exemple@email.com"
+                                           required
+                                           autocomplete="email"
+                                           value="<%= request.getParameter("email") != null ? request.getParameter("email") : "" %>">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CIN and Phone Number -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="cin" class="form-label">
+                                    CIN<span class="required">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <i class="fas fa-id-card input-icon"></i>
+                                    <input type="text"
+                                           class="form-control"
+                                           id="cin"
+                                           name="cin"
+                                           placeholder="Votre CIN"
+                                           required
+                                           value="<%= request.getParameter("cin") != null ? request.getParameter("cin") : "" %>">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="telephone" class="form-label">
+                                    Téléphone
+                                </label>
+                                <div class="input-group">
+                                    <i class="fas fa-phone input-icon"></i>
+                                    <input type="tel"
+                                           class="form-control"
+                                           id="telephone"
+                                           name="telephone"
+                                           placeholder="06XXXXXXXX"
+                                           value="<%= request.getParameter("telephone") != null ? request.getParameter("telephone") : "" %>">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Date of Birth and Gender -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="naissance" class="form-label">
+                                    Date de naissance
+                                </label>
+                                <div class="input-group">
+                                    <i class="fas fa-calendar input-icon"></i>
+                                    <input type="date"
+                                           class="form-control"
+                                           id="naissance"
+                                           name="naissance"
+                                           value="<%= request.getParameter("naissance") != null ? request.getParameter("naissance") : "" %>">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="sexe" class="form-label">
+                                    Sexe
+                                </label>
+                                <div class="input-group">
+                                    <i class="fas fa-venus-mars input-icon"></i>
+                                    <select class="form-select" id="sexe" name="sexe">
+                                        <option value="" <%= request.getParameter("sexe") == null ? "selected" : "" %>>Sélectionner</option>
+                                        <option value="M" <%= "M".equals(request.getParameter("sexe")) ? "selected" : "" %>>Masculin</option>
+                                        <option value="F" <%= "F".equals(request.getParameter("sexe")) ? "selected" : "" %>>Féminin</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Address -->
                         <div class="form-group">
-                            <label for="nom" class="form-label">
-                                Nom complet<span class="required">*</span>
+                            <label for="adresse" class="form-label">
+                                Adresse
                             </label>
                             <div class="input-group">
-                                <i class="fas fa-user input-icon"></i>
+                                <i class="fas fa-map-marker-alt input-icon"></i>
                                 <input type="text"
                                        class="form-control"
-                                       id="nom"
-                                       name="nom"
-                                       placeholder="Jean Dupont"
-                                       required
-                                       value="<%= request.getParameter("nom") != null ? request.getParameter("nom") : "" %>">
+                                       id="adresse"
+                                       name="adresse"
+                                       placeholder="Votre adresse complète"
+                                       value="<%= request.getParameter("adresse") != null ? request.getParameter("adresse") : "" %>">
                             </div>
                         </div>
 
+                        <!-- Blood Type -->
                         <div class="form-group">
-                            <label for="email" class="form-label">
-                                Adresse e-mail<span class="required">*</span>
+                            <label for="sang" class="form-label">
+                                Groupe sanguin
                             </label>
                             <div class="input-group">
-                                <i class="fas fa-envelope input-icon"></i>
-                                <input type="email"
-                                       class="form-control"
-                                       id="email"
-                                       name="email"
-                                       placeholder="exemple@email.com"
-                                       required
-                                       autocomplete="email"
-                                       value="<%= request.getParameter("email") != null ? request.getParameter("email") : "" %>">
+                                <i class="fas fa-tint input-icon"></i>
+                                <select class="form-select" id="sang" name="sang">
+                                    <option value="" <%= request.getParameter("sang") == null ? "selected" : "" %>>Sélectionner</option>
+                                    <option value="A+" <%= "A+".equals(request.getParameter("sang")) ? "selected" : "" %>>A+</option>
+                                    <option value="A-" <%= "A-".equals(request.getParameter("sang")) ? "selected" : "" %>>A-</option>
+                                    <option value="B+" <%= "B+".equals(request.getParameter("sang")) ? "selected" : "" %>>B+</option>
+                                    <option value="B-" <%= "B-".equals(request.getParameter("sang")) ? "selected" : "" %>>B-</option>
+                                    <option value="AB+" <%= "AB+".equals(request.getParameter("sang")) ? "selected" : "" %>>AB+</option>
+                                    <option value="AB-" <%= "AB-".equals(request.getParameter("sang")) ? "selected" : "" %>>AB-</option>
+                                    <option value="O+" <%= "O+".equals(request.getParameter("sang")) ? "selected" : "" %>>O+</option>
+                                    <option value="O-" <%= "O-".equals(request.getParameter("sang")) ? "selected" : "" %>>O-</option>
+                                </select>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Password Field -->
-                    <div class="form-group">
-                        <label for="password" class="form-label">
-                            Mot de passe<span class="required">*</span>
-                        </label>
-                        <div class="input-group">
-                            <i class="fas fa-lock input-icon"></i>
-                            <input type="password"
-                                   class="form-control"
-                                   id="password"
-                                   name="password"
-                                   placeholder="Minimum 8 caractères"
-                                   required
-                                   autocomplete="new-password">
-                            <i class="fas fa-eye password-toggle" id="togglePassword"></i>
-                        </div>
-                        <div class="password-strength" id="passwordStrength">
-                            <div class="password-strength-bar" id="passwordStrengthBar"></div>
-                        </div>
-                        <div class="password-strength-text" id="passwordStrengthText"></div>
-                    </div>
-
-                    <!-- Role Selection -->
-                    <div class="form-group">
-                        <label class="form-label">
-                            Sélectionnez votre profil<span class="required">*</span>
-                        </label>
-                        <div class="role-selection">
-                            <label class="role-card active" for="rolePatient">
-                                <input type="radio" name="role" id="rolePatient" value="PATIENT" checked>
-                                <i class="fas fa-user-injured"></i>
-                                <h5>Patient</h5>
-                                <p>Gérer mes rendez-vous</p>
+                        <!-- Password -->
+                        <div class="form-group">
+                            <label for="password" class="form-label">
+                                Mot de passe<span class="required">*</span>
                             </label>
+                            <div class="input-group">
+                                <i class="fas fa-lock input-icon"></i>
+                                <input type="password"
+                                       class="form-control"
+                                       id="password"
+                                       name="password"
+                                       placeholder="Minimum 8 caractères"
+                                       required
+                                       autocomplete="new-password">
+                                <i class="fas fa-eye password-toggle" id="togglePassword"></i>
+                            </div>
+                            <div class="password-strength" id="passwordStrength">
+                                <div class="password-strength-bar" id="passwordStrengthBar"></div>
+                            </div>
+                            <div class="password-strength-text" id="passwordStrengthText"></div>
+                        </div>
 
-                            <label class="role-card" for="roleDoctor">
-                                <input type="radio" name="role" id="roleDoctor" value="DOCTOR">
-                                <i class="fas fa-user-md"></i>
-                                <h5>Médecin</h5>
-                                <p>Consulter mes patients</p>
-                            </label>
-
-                            <label class="role-card" for="roleAdmin">
-                                <input type="radio" name="role" id="roleAdmin" value="ADMIN">
-                                <i class="fas fa-user-shield"></i>
-                                <h5>Administrateur</h5>
-                                <p>Gérer la plateforme</p>
+                        <!-- Terms and Conditions -->
+                        <div class="terms-checkbox">
+                            <input type="checkbox" id="terms" name="terms" required>
+                            <label for="terms">
+                                J'accepte les <a href="#">conditions d'utilisation</a> et la <a href="#">politique de confidentialité</a> d'e-Clinique
                             </label>
                         </div>
+
+                        <!-- Register Button -->
+                        <button type="submit" class="btn btn-register" id="registerBtn">
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            <span class="btn-text">
+                                <i class="fas fa-user-plus me-2"></i>Créer mon compte
+                            </span>
+                        </button>
+                    </form>
+
+                    <!-- Divider -->
+                    <div class="divider">
+                        <span>Vous avez déjà un compte ?</span>
                     </div>
 
-                    <!-- Terms and Conditions -->
-                    <div class="terms-checkbox">
-                        <input type="checkbox" id="terms" name="terms" required>
-                        <label for="terms">
-                            J'accepte les <a href="#">conditions d'utilisation</a> et la <a href="#">politique de confidentialité</a> d'e-Clinique
-                        </label>
+                    <!-- Login Link -->
+                    <div class="login-link">
+                        <a href="${pageContext.request.contextPath}/login">
+                            <i class="fas fa-sign-in-alt me-1"></i>Se connecter
+                        </a>
                     </div>
-
-                    <!-- Register Button -->
-                    <button type="submit" class="btn btn-register" id="registerBtn">
-                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                        <span class="btn-text">
-                            <i class="fas fa-user-plus me-2"></i>Créer mon compte
-                        </span>
-                    </button>
-                </form>
-
-                <!-- Divider -->
-                <div class="divider">
-                    <span>Vous avez déjà un compte ?</span>
-                </div>
-
-                <!-- Login Link -->
-                <div class="login-link">
-                    <a href="${pageContext.request.contextPath}/login">
-                        <i class="fas fa-sign-in-alt me-1"></i>Se connecter
-                    </a>
                 </div>
             </div>
         </div>
-    </div>
 
     <!-- Bootstrap JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Custom JavaScript -->
     <script>
-        // Theme Toggle
         const themeToggle = document.getElementById('themeToggle');
         const themeIcon = document.getElementById('themeIcon');
         const htmlElement = document.documentElement;
@@ -890,7 +1026,6 @@
             }
         }
 
-        // Password Toggle
         const togglePassword = document.getElementById('togglePassword');
         const passwordInput = document.getElementById('password');
 
@@ -902,7 +1037,6 @@
             this.classList.toggle('fa-eye-slash');
         });
 
-        // Password Strength Checker
         const passwordStrength = document.getElementById('passwordStrength');
         const passwordStrengthBar = document.getElementById('passwordStrengthBar');
         const passwordStrengthText = document.getElementById('passwordStrengthText');
@@ -941,7 +1075,6 @@
             }
         });
 
-        // Role Card Selection
         const roleCards = document.querySelectorAll('.role-card');
         roleCards.forEach(card => {
             card.addEventListener('click', function() {
@@ -950,7 +1083,6 @@
             });
         });
 
-        // Form Submission with Loading State
         const registerForm = document.getElementById('registerForm');
         const registerBtn = document.getElementById('registerBtn');
 
@@ -959,12 +1091,10 @@
             registerBtn.disabled = true;
         });
 
-        // Auto-focus on name field
         window.addEventListener('load', function() {
             document.getElementById('nom').focus();
         });
 
-        // Remove error/success messages after 5 seconds
         setTimeout(function() {
             const alerts = document.querySelectorAll('.alert');
             alerts.forEach(function(alert) {

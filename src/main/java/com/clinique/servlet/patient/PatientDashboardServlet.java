@@ -1,0 +1,55 @@
+package com.clinique.servlet.patient;
+
+import java.io.IOException;
+import com.clinique.controller.patient.PatientDashboardController;
+import com.clinique.dto.PatientDTO;
+import com.clinique.dto.UserDTO;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import java.util.Map;
+
+@WebServlet(name = "PatientDashboardServlet", urlPatterns = "/patient/dashboard")
+public class PatientDashboardServlet extends HttpServlet {
+
+    private final PatientDashboardController controller = new PatientDashboardController();
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        // Ensure user is logged in
+        HttpSession session = req.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
+            resp.sendRedirect(req.getContextPath() + "/login");
+            return;
+        }
+
+        // Ensure user is a patient (more flexible check)
+        Object userObj = session.getAttribute("user");
+        boolean isPatient = false;
+
+        if (userObj instanceof PatientDTO) {
+            isPatient = true;
+        } else if (userObj instanceof UserDTO) {
+            UserDTO user = (UserDTO) userObj;
+            isPatient = "PATIENT".equals(user.getRole());
+        }
+
+        if (!isPatient) {
+            resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Accès réservé aux patients");
+            return;
+        }
+
+        // Get dashboard data
+        Map<String, Object> result = controller.getDashboardData(req);
+
+        // Forward attributes to JSP
+        for (Map.Entry<String, Object> entry : result.entrySet()) {
+            req.setAttribute(entry.getKey(), entry.getValue());
+        }
+
+        req.getRequestDispatcher("/WEB-INF/views/patient/dashboard.jsp").forward(req, resp);
+    }
+}

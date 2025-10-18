@@ -1,7 +1,6 @@
 package com.clinique.entity;
 
-import com.clinique.enums.StatutRendezVous;
-import com.clinique.enums.TypeRendezVous;
+import com.clinique.enums.AppointmentStatus;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -15,77 +14,62 @@ public class Appointment {
     @GeneratedValue
     private UUID id;
 
+    @Column(nullable = false)
     private LocalDate date;
-    private LocalTime heure;
+
+    @Column(nullable = false)
+    private LocalTime heureDebut;
+
+    @Column(nullable = false)
+    private LocalTime heureFin;
+
+    private String type;
+
+    private String motif;
 
     @Enumerated(EnumType.STRING)
-    private StatutRendezVous statut;
+    @Column(nullable = false)
+    private AppointmentStatus statut = AppointmentStatus.PLANNED;
 
     @ManyToOne
-    @JoinColumn(name = "patient_id")
+    @JoinColumn(name = "patient_id", nullable = false)
     private Patient patient;
 
     @ManyToOne
-    @JoinColumn(name = "doctor_id")
-    private Doctor docteur;
+    @JoinColumn(name = "doctor_id", nullable = false)
+    private Doctor doctor;
 
-    @Enumerated(EnumType.STRING)
-    private TypeRendezVous type;
+    @OneToOne(mappedBy = "appointment", cascade = CascadeType.ALL)
+    private MedicalNote medicalNote;
 
-    public UUID getId() {
-        return id;
-    }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
-    public void setId(UUID id) {
-        this.id = id;
-    }
+    public LocalDate getDate() { return date; }
+    public void setDate(LocalDate date) { this.date = date; }
 
-    public LocalDate getDate() {
-        return date;
-    }
+    public LocalTime getHeureDebut() { return heureDebut; }
+    public void setHeureDebut(LocalTime heureDebut) { this.heureDebut = heureDebut; }
 
-    public void setDate(LocalDate date) {
-        this.date = date;
-    }
+    public LocalTime getHeureFin() { return heureFin; }
+    public void setHeureFin(LocalTime heureFin) { this.heureFin = heureFin; }
 
-    public LocalTime getHeure() {
-        return heure;
-    }
+    public String getType() { return type; }
+    public void setType(String type) { this.type = type; }
 
-    public void setHeure(LocalTime heure) {
-        this.heure = heure;
-    }
+    public String getMotif() { return motif; }
+    public void setMotif(String motif) { this.motif = motif; }
 
-    public StatutRendezVous getStatut() {
-        return statut;
-    }
+    public AppointmentStatus getStatut() { return statut; }
+    public void setStatut(AppointmentStatus statut) { this.statut = statut; }
 
-    public void setStatut(StatutRendezVous statut) {
-        this.statut = statut;
-    }
+    public Patient getPatient() { return patient; }
+    public void setPatient(Patient patient) { this.patient = patient; }
 
-    public Patient getPatient() {
-        return patient;
-    }
+    public Doctor getDoctor() { return doctor; }
+    public void setDoctor(Doctor doctor) { this.doctor = doctor; }
 
-    public void setPatient(Patient patient) {
-        this.patient = patient;
-    }
-
-    public Doctor getDocteur() {
-        return docteur;
-    }
-
-    public void setDocteur(Doctor docteur) {
-        this.docteur = docteur;
-    }
-
-    public TypeRendezVous getType() {
-        return type;
-    }
-
-    public void setType(TypeRendezVous type) {
-        this.type = type;
-    }
+    public MedicalNote getMedicalNote() { return medicalNote; }
+    public void setMedicalNote(MedicalNote medicalNote) { this.medicalNote = medicalNote; }
 
 }

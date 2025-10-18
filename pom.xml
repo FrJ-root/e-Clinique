@@ -9,12 +9,31 @@
   <url>http://maven.apache.org</url>
   <dependencies>
 
+      <dependency>
+          <groupId>jakarta.el</groupId>
+          <artifactId>jakarta.el-api</artifactId>
+          <version>4.0.0</version>
+      </dependency>
+
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>3.8.1</version>
       <scope>test</scope>
     </dependency>
+
+      <!-- Jackson for JSON processing -->
+      <dependency>
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-databind</artifactId>
+          <version>2.15.2</version>
+      </dependency>
+
+      <dependency>
+          <groupId>com.fasterxml.jackson.datatype</groupId>
+          <artifactId>jackson-datatype-jsr310</artifactId>
+          <version>2.15.2</version>
+      </dependency>
 
       <dependency>
           <groupId>org.mindrot</groupId>
@@ -35,14 +54,18 @@
           <version>3.0.0</version>
       </dependency>
 
-      <!-- JPA / Hibernate -->
+      <dependency>
+          <groupId>org.glassfish.web</groupId>
+          <artifactId>jakarta.servlet.jsp.jstl</artifactId>
+          <version>3.0.1</version>
+      </dependency>
+
       <dependency>
           <groupId>org.hibernate.orm</groupId>
           <artifactId>hibernate-core</artifactId>
           <version>6.3.1.Final</version>
       </dependency>
 
-      <!-- JUnit & Mockito -->
       <dependency>
           <groupId>org.junit.jupiter</groupId>
           <artifactId>junit-jupiter-api</artifactId>

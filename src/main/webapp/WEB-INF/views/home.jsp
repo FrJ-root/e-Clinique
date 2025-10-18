@@ -12,6 +12,67 @@
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
+
+  .user-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background-color: var(--primary);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 1.1rem;
+        margin-right: 15px;
+        box-shadow: 0 3px 10px rgba(0, 180, 216, 0.3);
+        transition: all 0.3s ease;
+      }
+
+      .user-avatar:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0, 180, 216, 0.5);
+      }
+
+      .dropdown-menu {
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
+        padding: 10px;
+        min-width: 200px;
+        margin-top: 10px;
+        animation: fadeInDown 0.3s ease;
+      }
+
+      .dropdown-item {
+        border-radius: 10px;
+        padding: 10px 15px;
+        transition: all 0.2s ease;
+        font-weight: 500;
+      }
+
+      .dropdown-item:hover {
+        background-color: var(--light);
+        transform: translateX(3px);
+      }
+
+      .dropdown-divider {
+        margin: 5px 0;
+        border-color: var(--border-color);
+      }
+
+      @keyframes fadeInDown {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
     :root {
       --primary: #00b4d8;
       --primary-dark: #0096c7;
@@ -658,7 +719,6 @@
   </style>
 </head>
 <body>
-  <!-- Navigation Bar -->
   <nav class="navbar navbar-expand-lg navbar-light" id="mainNavbar">
     <div class="container">
       <a class="navbar-brand" href="${pageContext.request.contextPath}/">
@@ -689,12 +749,140 @@
           <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
             <i class="fas fa-moon" id="themeIcon"></i>
           </button>
-          <a href="${pageContext.request.contextPath}/login" class="btn btn-outline-primary btn-connexion">
-            <i class="fas fa-sign-in-alt me-2"></i>Connexion
-          </a>
-          <a href="${pageContext.request.contextPath}/register" class="btn btn-primary btn-start">
-            <i class="fas fa-rocket me-2"></i>Démarrer
-          </a>
+
+          <% if (session != null && session.getAttribute("user") != null) { %>
+            <!-- User is logged in -->
+            <div class="dropdown">
+              <button class="user-avatar" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false" type="button">
+                <%
+                  Object userObj = session.getAttribute("user");
+                  String userName = "U";
+                  try {
+                    if (userObj != null) {
+                      if (userObj.toString().contains("nom")) {
+                        // If it's a complex object with properties
+                        // This assumes there's a getNom() or similar method on your user object
+                        java.lang.reflect.Method getNom = userObj.getClass().getMethod("getNom");
+                        String nomValue = (String) getNom.invoke(userObj);
+                        if (nomValue != null && !nomValue.isEmpty()) {
+                          userName = nomValue.substring(0, 1).toUpperCase();
+                        }
+                      } else if (userObj.toString().length() > 0) {
+                        // Simple string representation
+                        userName = userObj.toString().substring(0, 1).toUpperCase();
+                      }
+                    }
+                  } catch (Exception e) {
+                    // Fallback to default
+                  }
+                %>
+                <%= userName %>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0" aria-labelledby="userDropdown">
+                <li class="dropdown-item-text px-3 py-2">
+                  <div class="fw-bold">Bonjour,</div>
+                  <div class="text-primary">
+                    <%
+                      try {
+                        if (userObj != null) {
+                          if (userObj.toString().contains("nom")) {
+                            java.lang.reflect.Method getNom = userObj.getClass().getMethod("getNom");
+                            out.print(getNom.invoke(userObj));
+                          } else {
+                            out.print(userObj);
+                          }
+                        }
+                      } catch (Exception e) {
+                        out.print("Utilisateur");
+                      }
+                    %>
+                  </div>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+
+                <% if (session.getAttribute("user") != null) { %>
+                  <% String role = "";
+                     try {
+                       if (session.getAttribute("role") != null) {
+                         role = session.getAttribute("role").toString();
+                       } else if (userObj.getClass().getMethod("getRole") != null) {
+                         java.lang.reflect.Method getRole = userObj.getClass().getMethod("getRole");
+                         Object roleObj = getRole.invoke(userObj);
+                         if (roleObj != null) {
+                           role = roleObj.toString();
+                         }
+                       }
+                     } catch (Exception e) {
+                       // Ignore if method doesn't exist
+                     }
+                  %>
+
+                  <% if (role.contains("ADMIN")) { %>
+                    <li>
+                      <a class="dropdown-item d-flex align-items-center" href="${pageContext.request.contextPath}/admin/dashboard">
+                        <span class="icon-wrapper bg-primary text-white me-3">
+                          <i class="fas fa-tachometer-alt"></i>
+                        </span>
+                        <span>Administration</span>
+                      </a>
+                    </li>
+                  <% } else if (role.contains("DOCTOR")) { %>
+                    <li>
+                      <a class="dropdown-item d-flex align-items-center" href="${pageContext.request.contextPath}/doctor/dashboard">
+                        <span class="icon-wrapper bg-info text-white me-3">
+                          <i class="fas fa-stethoscope"></i>
+                        </span>
+                        <span>Tableau de bord</span>
+                      </a>
+                    </li>
+                  <% } else if (role.contains("PATIENT")) { %>
+                    <li>
+                      <a class="dropdown-item d-flex align-items-center" href="${pageContext.request.contextPath}/patient/dashboard">
+                        <span class="icon-wrapper bg-success text-white me-3">
+                          <i class="fas fa-columns"></i>
+                        </span>
+                        <span>Tableau de bord</span>
+                      </a>
+                    </li>
+                  <% } %>
+
+                  <li>
+                    <a class="dropdown-item d-flex align-items-center" href="${pageContext.request.contextPath}/profile">
+                      <span class="icon-wrapper bg-secondary text-white me-3">
+                        <i class="fas fa-user-circle"></i>
+                      </span>
+                      <span>Mon profil</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a class="dropdown-item d-flex align-items-center" href="${pageContext.request.contextPath}/appointments">
+                      <span class="icon-wrapper bg-warning text-white me-3">
+                        <i class="fas fa-calendar-check"></i>
+                      </span>
+                      <span>Mes rendez-vous</span>
+                    </a>
+                  </li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li>
+                    <a class="dropdown-item d-flex align-items-center" href="${pageContext.request.contextPath}/logout">
+                      <span class="icon-wrapper bg-danger text-white me-3">
+                        <i class="fas fa-sign-out-alt"></i>
+                      </span>
+                      <span>Déconnexion</span>
+                    </a>
+                  </li>
+                <% } %>
+              </ul>
+            </div>
+          <% } else { %>
+            <!-- User is not logged in -->
+            <a href="${pageContext.request.contextPath}/login" class="btn btn-outline-primary btn-connexion">
+              <i class="fas fa-sign-in-alt me-2"></i>Connexion
+            </a>
+            <a href="${pageContext.request.contextPath}/register" class="btn btn-primary btn-start">
+              <i class="fas fa-rocket me-2"></i>Démarrer
+            </a>
+          <% } %>
         </div>
       </div>
     </div>

@@ -49,7 +49,8 @@
             justify-content: center;
             transition: background-color 0.3s ease;
             position: relative;
-            overflow: hidden;
+            overflow-x: hidden;
+            padding: 60px 0;
         }
 
         /* Background Pattern */
@@ -482,18 +483,19 @@
             transform: translateX(-5px);
         }
 
-        /* Responsive */
+        /* Responsive Improvements */
         @media (max-width: 576px) {
             .login-container {
                 padding: 15px;
+                margin-top: 30px; /* Add space at top for fixed buttons */
             }
 
             .login-header {
-                padding: 35px 25px;
+                padding: 30px 20px;
             }
 
             .login-body {
-                padding: 35px 25px;
+                padding: 30px 20px;
             }
 
             .login-header .brand span {
@@ -504,16 +506,97 @@
                 font-size: 1.5rem;
             }
 
+            .login-header p {
+                font-size: 0.9rem;
+            }
+
             .back-home, .theme-toggle {
                 top: 15px;
+                width: 40px;
+                height: 40px;
+                position: fixed; /* Make buttons fixed on small screens */
             }
 
             .back-home {
                 left: 15px;
             }
 
+            .back-home a {
+                padding: 8px;
+                font-size: 0.9rem;
+            }
+
+            .back-home a span {
+                display: none; /* Hide text on mobile, keep just icon */
+            }
+
             .theme-toggle {
                 right: 15px;
+            }
+
+            .form-control {
+                padding: 12px 16px 12px 45px; /* Slightly smaller padding on mobile */
+                font-size: 16px; /* Better for mobile input */
+            }
+
+            .input-icon {
+                left: 15px;
+            }
+
+            .form-group {
+                margin-bottom: 20px; /* Less space between form groups on mobile */
+            }
+
+            /* Make remember me and forgot password responsive */
+            .d-flex.justify-content-between.align-items-center.mb-3 {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 10px;
+            }
+
+            .forgot-password {
+                text-align: left;
+                margin-top: 5px;
+            }
+        }
+
+        /* Extra small devices */
+        @media (max-width: 375px) {
+            .login-header {
+                padding: 25px 15px;
+            }
+
+            .login-header .brand i {
+                font-size: 2.2rem;
+            }
+
+            .login-header .brand span {
+                font-size: 1.5rem;
+            }
+
+            .login-header h2 {
+                font-size: 1.3rem;
+            }
+
+            .login-body {
+                padding: 25px 15px;
+            }
+
+            .btn-login {
+                font-size: 1rem;
+                padding: 14px;
+            }
+
+            .remember-me label {
+                font-size: 0.85rem;
+            }
+
+            .forgot-password a {
+                font-size: 0.85rem;
+            }
+
+            .register-link {
+                font-size: 0.9rem;
             }
         }
 
@@ -590,7 +673,22 @@
                     </div>
                 <% } %>
 
-                <!-- Success Message -->
+                <!-- Session Success Message -->
+                <%
+                String successMessage = (String) session.getAttribute("successMessage");
+                if (successMessage != null) {
+                %>
+                    <div class="alert alert-success" role="alert">
+                        <i class="fas fa-check-circle"></i>
+                        <%= successMessage %>
+                    </div>
+                    <%
+                    // Remove it from session to prevent displaying it again on refresh
+                    session.removeAttribute("successMessage");
+                    %>
+                <% } %>
+
+                <!-- Success Message from Request -->
                 <%
                 String success = (String) request.getAttribute("success");
                 if (success != null && !success.isEmpty()) {
@@ -722,7 +820,6 @@
             this.classList.toggle('fa-eye-slash');
         });
 
-        // Form Submission with Loading State
         const loginForm = document.getElementById('loginForm');
         const loginBtn = document.getElementById('loginBtn');
 
@@ -731,7 +828,6 @@
             loginBtn.disabled = true;
         });
 
-        // Auto-focus on email field
         window.addEventListener('load', function() {
             document.getElementById('email').focus();
         });

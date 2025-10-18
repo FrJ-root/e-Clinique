@@ -1,27 +1,84 @@
 package com.clinique.entity;
 
 import jakarta.persistence.*;
-import java.util.UUID;
 
 @Entity
 @Table(name = "doctors")
+@PrimaryKeyJoinColumn(name = "id")
 public class Doctor extends User {
 
     @Column(nullable = false, unique = true)
     private String matricule;
-
     private String titre;
+    private String telephone;
 
     @ManyToOne
     @JoinColumn(name = "specialty_id")
-    private Specialty specialite;
+    private Specialty specialty;
 
-    public String getMatricule() { return matricule; }
-    public void setMatricule(String matricule) { this.matricule = matricule; }
+    @Column(columnDefinition = "TEXT")
+    private String presentation;
 
-    public String getTitre() { return titre; }
-    public void setTitre(String titre) { this.titre = titre; }
+    @Column(columnDefinition = "TEXT")
+    private String experience;
 
-    public Specialty getSpecialite() { return specialite; }
-    public void setSpecialite(Specialty specialite) { this.specialite = specialite; }
+    @Column(columnDefinition = "TEXT")
+    private String formation;
+
+    public String getMatricule() {
+        return matricule;
+    }
+
+    public void setMatricule(String matricule) {
+        this.matricule = matricule;
+    }
+
+    public String getTitre() {
+        return titre;
+    }
+
+    public void setTitre(String titre) {
+        this.titre = titre;
+    }
+
+    public String getTelephone() {
+        return telephone;
+    }
+
+    public void setTelephone(String telephone) {
+        this.telephone = telephone;
+    }
+
+    public Specialty getSpecialty() {
+        return specialty;
+    }
+
+    public void setSpecialty(Specialty specialty) {
+        this.specialty = specialty;
+    }
+
+    public String getPresentation() {
+        return presentation;
+    }
+
+    public void setPresentation(String presentation) {
+        this.presentation = presentation;
+    }
+
+    public String getExperience() {
+        return experience;
+    }
+
+    public void setExperience(String experience) {
+        this.experience = experience;
+    }
+
+    public String getFormation() {
+        return formation;
+    }
+
+    public void setFormation(String formation) {
+        this.formation = formation;
+    }
+
 }
