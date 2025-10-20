@@ -32,7 +32,15 @@ public class AppointmentService {
     private final AvailabilityRepository availabilityRepository = new AvailabilityRepository();
 
     public AppointmentDTO bookAppointment(UUID patientId, UUID doctorId, LocalDate date, LocalTime startTime, LocalTime endTime, String motif) {
+        System.out.println("\n=== BOOKING APPOINTMENT ===");
+        System.out.println("Patient ID: " + patientId);
+        System.out.println("Doctor ID: " + doctorId);
+        System.out.println("Date: " + date);
+        System.out.println("Start Time: " + startTime);
+        System.out.println("End Time: " + endTime);
+        System.out.println("Motif: " + motif);
 
+        // Validate patient
         Optional<Patient> patientOpt = patientRepository.findById(patientId);
         if (patientOpt.isEmpty()) {
             throw new IllegalArgumentException("Patient non trouvé");
@@ -42,7 +50,9 @@ public class AppointmentService {
         if (!patient.isActif()) {
             throw new IllegalArgumentException("Le patient n'est pas actif");
         }
+        System.out.println("✓ Patient found: " + patient.getNom());
 
+        // Validate doctor
         Optional<Doctor> doctorOpt = doctorRepository.findById(doctorId);
         if (doctorOpt.isEmpty()) {
             throw new IllegalArgumentException("Docteur non trouvé");
@@ -52,7 +62,20 @@ public class AppointmentService {
         if (!doctor.isActif()) {
             throw new IllegalArgumentException("Le docteur n'est pas actif");
         }
+        System.out.println("✓ Doctor found: " + doctor.getNom());
 
+        // ✅ NEW: Check if patient already has an active appointment with this doctor
+        boolean hasActiveAppointment = appointmentRepository.hasActiveAppointmentWithDoctor(patient, doctor);
+        if (hasActiveAppointment) {
+            System.err.println("✗ Patient already has an active appointment with this doctor");
+            throw new IllegalArgumentException(
+                    "Vous avez déjà un rendez-vous prévu avec " + doctor.getNom() +
+                            ". Veuillez attendre la fin de votre rendez-vous actuel avant d'en prendre un nouveau avec ce médecin."
+            );
+        }
+        System.out.println("✓ No active appointments with this doctor");
+
+        // Validate time
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime appointmentDateTime = LocalDateTime.of(date, startTime);
 
@@ -63,23 +86,39 @@ public class AppointmentService {
         if (appointmentDateTime.isBefore(now.plusHours(2))) {
             throw new IllegalArgumentException("Les rendez-vous doivent être pris au moins 2 heures à l'avance");
         }
+        System.out.println("✓ Time validation passed");
 
+        // Check for overlapping appointments
         List<Appointment> overlappingAppointments = appointmentRepository.findOverlappingAppointments(doctor, date, startTime, endTime);
         if (!overlappingAppointments.isEmpty()) {
+            System.err.println("✗ Overlapping appointment found");
             throw new IllegalArgumentException("Ce créneau est déjà réservé");
         }
+        System.out.println("✓ No overlapping appointments");
 
-        Appointment appointment = new Appointment();
-        appointment.setDate(date);
-        appointment.setHeureDebut(startTime);
-        appointment.setHeureFin(endTime);
-        appointment.setPatient(patient);
-        appointment.setDoctor(doctor);
-        appointment.setStatut(AppointmentStatus.PLANNED);
-        appointment.setMotif(motif);
+        // Create appointment
+        try {
+            Appointment appointment = new Appointment();
+            appointment.setDate(date);
+            appointment.setHeureDebut(startTime);
+            appointment.setHeureFin(endTime);
+            appointment.setPatient(patient);
+            appointment.setDoctor(doctor);
+            appointment.setStatut(AppointmentStatus.PLANNED);
+            appointment.setMotif(motif);
 
-        Appointment saved = appointmentRepository.save(appointment);
-        return AppointmentMapper.toDTO(saved);
+            System.out.println("Saving appointment...");
+            Appointment saved = appointmentRepository.save(appointment);
+            System.out.println("✓ Appointment saved with ID: " + saved.getId());
+            System.out.println("=== END BOOKING APPOINTMENT ===\n");
+
+            return AppointmentMapper.toDTO(saved);
+
+        } catch (Exception e) {
+            System.err.println("✗ ERROR saving appointment:");
+            e.printStackTrace();
+            throw new RuntimeException("Erreur lors de la sauvegarde du rendez-vous: " + e.getMessage(), e);
+        }
     }
 
     public int countCancellationsSince(LocalDate since) {
@@ -484,37 +523,6 @@ public class AppointmentService {
 
         return appointment.getDate().isAfter(today) ||
                 (appointment.getDate().isEqual(today) && appointment.getHeureDebut().isAfter(now));
-    }
-
-    public List<TimeSlotDTO> getAvailableTimeSlotsForBooking(UUID doctorId, LocalDate date) {
-        // Call the original method to get all available slots
-        List<TimeSlotDTO> allSlots = generateAvailableTimeSlots(doctorId, date);
-
-        // Filter slots that are at least 2 hours in the future if the date is today
-        if (date.equals(LocalDate.now())) {
-            LocalDateTime minValidTime = AppointmentValidator.getMinimumValidAppointmentTime();
-
-            return allSlots.stream()
-                    .filter(slot -> {
-                        // Convert the slot time to LocalDateTime for comparison
-                        LocalTime slotTime = LocalTime.parse(slot.getStartTime());
-                        LocalDateTime slotDateTime = LocalDateTime.of(date, slotTime);
-                        return !slotDateTime.isBefore(minValidTime);
-                    })
-                    .collect(Collectors.toList());
-        }
-
-        // If date is in the future, return all slots
-        return allSlots;
-    }
-
-    private List<AvailabilityDTO> getAvailabilityForDoctorAndDate(Doctor doctor, LocalDate date) {
-        List<Availability> availabilities = availabilityRepository.findByDoctorAndDayOfWeek(
-                doctor, date.getDayOfWeek().getValue());
-
-        return availabilities.stream()
-                .map(AvailabilityMapper::toDTO)
-                .collect(Collectors.toList());
     }
 
     private boolean isTimeSlotBooked(Doctor doctor, LocalDate date, LocalTime start, LocalTime end) {

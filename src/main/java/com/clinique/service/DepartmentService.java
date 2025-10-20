@@ -1,13 +1,18 @@
 package com.clinique.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import com.clinique.config.DBConnection;
 import com.clinique.dto.DepartmentDTO;
 import com.clinique.entity.Department;
 import com.clinique.mapper.DepartmentMapper;
 import com.clinique.repository.DepartmentRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
 
 public class DepartmentService {
 
@@ -109,6 +114,50 @@ public class DepartmentService {
         } catch (Exception e) {
             System.err.println("Error deleting department: " + e.getMessage());
             return false;
+        }
+    }
+
+    public List<DepartmentDTO> getAllDepartments() {
+        List<Department> departments = departmentRepository.findAll();
+        return departments.stream()
+                .map(DepartmentMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<DepartmentDTO> findAllActive() {
+        List<Department> departments = departmentRepository.findByActive(true);
+        return departments.stream()
+                .map(DepartmentMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<DepartmentDTO> getDepartmentsWithDoctors() {
+        List<Department> allDepartments = departmentRepository.findAll();
+        List<DepartmentDTO> departmentsWithDoctors = new ArrayList<>();
+
+        for (Department department : allDepartments) {
+            if (departmentHasDoctors(department.getId())) {
+                departmentsWithDoctors.add(DepartmentMapper.toDTO(department));
+            }
+        }
+
+        return departmentsWithDoctors;
+    }
+
+    private boolean departmentHasDoctors(UUID departmentId) {
+        EntityManager em = DBConnection.getEntityManager();
+        try {
+            TypedQuery<Long> query = em.createQuery(
+                    "SELECT COUNT(d) FROM Doctor d " +
+                            "JOIN d.specialty s " +
+                            "WHERE s.department.id = :departmentId " +
+                            "AND d.actif = true",
+                    Long.class
+            );
+            query.setParameter("departmentId", departmentId);
+            return query.getSingleResult() > 0;
+        } finally {
+            if (em.isOpen()) em.close();
         }
     }
 

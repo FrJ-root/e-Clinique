@@ -15,7 +15,10 @@ public class DepartmentRepository {
     public Optional<Department> findById(UUID id) {
         EntityManager em = DBConnection.getEntityManager();
         try {
-            return Optional.ofNullable(em.find(Department.class, id));
+            Department department = em.find(Department.class, id);
+            System.out.println("DepartmentRepository: findById " + id + " result: " +
+                    (department != null ? department.getNom() : "null"));
+            return Optional.ofNullable(department);
         } finally {
             if (em.isOpen()) em.close();
         }
@@ -95,6 +98,19 @@ public class DepartmentRepository {
                 em.getTransaction().rollback();
             }
             throw e;
+        } finally {
+            if (em.isOpen()) em.close();
+        }
+    }
+
+    public List<Department> findByActive(boolean active) {
+        EntityManager em = DBConnection.getEntityManager();
+        try {
+            TypedQuery<Department> query = em.createQuery(
+                    "SELECT d FROM Department d WHERE d.actif = :active ORDER BY d.nom",
+                    Department.class);
+            query.setParameter("active", active);
+            return query.getResultList();
         } finally {
             if (em.isOpen()) em.close();
         }

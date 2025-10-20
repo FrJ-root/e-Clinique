@@ -2,7 +2,6 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
-
 <!DOCTYPE html>
 <html lang="fr" data-theme="${sessionScope.theme || 'light'}">
 <head>
@@ -10,57 +9,33 @@
     <%@ include file="components/head.jsp" %>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-style.css">
     <style>
-        .patient-card {
-            transition: all 0.2s ease-in-out;
-            cursor: pointer;
-        }
-        .patient-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-        .status-badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-        .status-badge.active {
-            background-color: rgba(40, 167, 69, 0.1);
-            color: #28a745;
-        }
-        .status-badge.inactive {
-            background-color: rgba(108, 117, 125, 0.1);
-            color: #6c757d;
-        }
-        .avatar-placeholder {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background-color: var(--primary);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-        }
+        .patient-card { transition: all 0.2s ease-in-out; cursor: pointer; }
+        .patient-card:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,180,216,0.10);}
+        .status-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: 600;}
+        .status-badge.active { background-color: rgba(40, 167, 69, 0.12); color: #28a745;}
+        .status-badge.inactive { background-color: rgba(108,117,125,0.12); color: #6c757d;}
+        .avatar-placeholder { width: 40px; height: 40px; border-radius: 50%; background-color: #0dcaf0; color: #fff;
+            display: flex; align-items: center; justify-content: center; font-weight: 700; box-shadow: 0 1px 6px rgba(0,0,0,0.07);}
+        .btn-group .btn { margin-right: 5px;}
+        .badge.bg-primary {background: #0dcaf0;}
+        .badge.bg-success {background: #28a745;}
+        .badge.bg-info {background: #17a2b8;}
+        .badge.bg-secondary {background: #6c757d;}
+        .table th, .table td {vertical-align: middle;}
+        @media (max-width: 600px) { .avatar-placeholder { width: 28px; height: 28px; font-size: 0.92em;} }
     </style>
 </head>
 <body>
     <c:set var="pageTitle" value="Mes Patients" scope="request" />
     <%@ include file="components/sidebar.jsp" %>
-
     <main class="main-content" id="mainContent">
         <%@ include file="components/header.jsp" %>
-
         <div class="content-area">
-            <!-- Main content -->
             <div class="content-card">
                 <!-- Search and filters -->
                 <div class="row mb-4">
                     <div class="col-md-8">
                         <h3 class="mb-3">${filterTitle}</h3>
-
                         <div class="d-flex flex-wrap gap-2 mb-3">
                             <a href="${pageContext.request.contextPath}/doctor/patients"
                                class="btn ${filter eq 'all' || empty filter ? 'btn-primary' : 'btn-outline-primary'}">
@@ -75,7 +50,6 @@
                                 <i class="fas fa-star me-1"></i>Patients réguliers
                             </a>
                         </div>
-
                         <form action="${pageContext.request.contextPath}/doctor/patients" method="get" class="mt-3">
                             <div class="input-group">
                                 <input type="text" class="form-control" placeholder="Rechercher un patient..."
@@ -87,7 +61,7 @@
                             <c:if test="${not empty searchTerm}">
                                 <div class="mt-2">
                                     <small class="text-muted">
-                                        ${searchResults} résultat(s) pour "${searchTerm}"
+                                        ${searchResults} résultat(s) pour "<b>${searchTerm}</b>"
                                         <a href="${pageContext.request.contextPath}/doctor/patients"
                                            class="ms-2 text-decoration-none">
                                            <i class="fas fa-times"></i> Effacer la recherche
@@ -97,7 +71,6 @@
                             </c:if>
                         </form>
                     </div>
-
                     <div class="col-md-4">
                         <div class="card">
                             <div class="card-body">
@@ -163,10 +136,7 @@
                                         <c:if test="${not empty patient.dateNaissance}">
                                             <fmt:parseDate value="${patient.dateNaissance}" pattern="yyyy-MM-dd" var="parsedDate" type="date" />
                                             <fmt:formatDate value="${parsedDate}" pattern="dd/MM/yyyy" />
-
-                                            <div class="small text-muted">
-                                                ${patient.age} ans
-                                            </div>
+                                            <div class="small text-muted">${patient.age} ans</div>
                                         </c:if>
                                     </td>
                                     <td>
@@ -183,8 +153,12 @@
                                     <td>
                                         <div class="btn-group">
                                             <a href="${pageContext.request.contextPath}/doctor/patients/view?id=${patient.id}"
-                                               class="btn btn-sm btn-outline-primary">
+                                               class="btn btn-sm btn-outline-primary" title="Voir fiche patient">
                                                 <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="${pageContext.request.contextPath}/doctor/patients/view?id=${patient.id}#medical-history"
+                                               class="btn btn-sm btn-outline-success" title="Voir historique médical">
+                                                <i class="fas fa-notes-medical"></i>
                                             </a>
                                         </div>
                                     </td>
@@ -212,7 +186,6 @@
                     </table>
                 </div>
             </div>
-
             <%@ include file="components/footer.jsp" %>
         </div>
     </main>
@@ -221,13 +194,12 @@
     <script src="${pageContext.request.contextPath}/assets/js/doctor-script.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Make patient rows clickable
+            // Make patient rows clickable (except button/links)
             document.querySelectorAll('.patient-row').forEach(row => {
                 row.addEventListener('click', function(e) {
-                    // Only trigger if not clicking on a button or link
                     if (!e.target.closest('button') && !e.target.closest('a')) {
                         const id = this.getAttribute('data-id');
-                        window.location.href = `${pageContext.request.contextPath}/doctor/patients/view?id=${id}`;
+                        window.location.href = `${'${pageContext.request.contextPath}'}/doctor/patients/view?id=${id}`;
                     }
                 });
             });

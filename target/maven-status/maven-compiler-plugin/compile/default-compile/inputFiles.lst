@@ -84,6 +84,10 @@
 /home/kali/IdeaProjects/clinique-digitale/src/main/java/com/clinique/servlet/admin/AdminSettingsServlet.java
 /home/kali/IdeaProjects/clinique-digitale/src/main/java/com/clinique/servlet/admin/AdminSpecialtiesServlet.java
 /home/kali/IdeaProjects/clinique-digitale/src/main/java/com/clinique/servlet/admin/AdminUsersServlet.java
+/home/kali/IdeaProjects/clinique-digitale/src/main/java/com/clinique/servlet/api/AvailableDatesApiServlet.java
+/home/kali/IdeaProjects/clinique-digitale/src/main/java/com/clinique/servlet/api/AvailableTimeSlotsApiServlet.java
+/home/kali/IdeaProjects/clinique-digitale/src/main/java/com/clinique/servlet/api/DoctorsApiServlet.java
+/home/kali/IdeaProjects/clinique-digitale/src/main/java/com/clinique/servlet/api/SpecialtiesApiServlet.java
 /home/kali/IdeaProjects/clinique-digitale/src/main/java/com/clinique/servlet/auth/LoginServlet.java
 /home/kali/IdeaProjects/clinique-digitale/src/main/java/com/clinique/servlet/auth/LogoutServlet.java
 /home/kali/IdeaProjects/clinique-digitale/src/main/java/com/clinique/servlet/auth/RegisterServlet.java
@@ -95,9 +99,12 @@
 /home/kali/IdeaProjects/clinique-digitale/src/main/java/com/clinique/servlet/doctor/DoctorScheduleServlet.java
 /home/kali/IdeaProjects/clinique-digitale/src/main/java/com/clinique/servlet/doctor/MedicalNotesServlet.java
 /home/kali/IdeaProjects/clinique-digitale/src/main/java/com/clinique/servlet/doctor/PatientHistoryServlet.java
+/home/kali/IdeaProjects/clinique-digitale/src/main/java/com/clinique/servlet/patient/DirectBookingServlet.java
 /home/kali/IdeaProjects/clinique-digitale/src/main/java/com/clinique/servlet/patient/DoctorSearchServlet.java
 /home/kali/IdeaProjects/clinique-digitale/src/main/java/com/clinique/servlet/patient/PatientAppointmentsServlet.java
 /home/kali/IdeaProjects/clinique-digitale/src/main/java/com/clinique/servlet/patient/PatientDashboardServlet.java
 /home/kali/IdeaProjects/clinique-digitale/src/main/java/com/clinique/servlet/patient/PatientProfileServlet.java
+/home/kali/IdeaProjects/clinique-digitale/src/main/java/com/clinique/servlet/patient/ProcessDirectBookingServlet.java
+/home/kali/IdeaProjects/clinique-digitale/src/main/java/com/clinique/servlet/patient/SimpleBookingServlet.java
 /home/kali/IdeaProjects/clinique-digitale/src/main/java/com/clinique/utils/AppointmentValidator.java
 /home/kali/IdeaProjects/clinique-digitale/src/main/java/com/clinique/utils/JsonUtils.java

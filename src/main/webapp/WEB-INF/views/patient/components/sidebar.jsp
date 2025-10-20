@@ -26,6 +26,10 @@
             <i class="fas fa-user"></i>
             <span>My Profil</span>
         </a>
+        <a href="${pageContext.request.contextPath}/patient/simple-booking" class="sidebar-nav-item ${pageContext.request.servletPath == '/patient/simple-booking' ? 'active' : ''}">
+            <i class="fas fa-user-md"></i>
+            <span>Prendre RDV</span>
+        </a>
         <a href="${pageContext.request.contextPath}/patient/doctors" class="sidebar-nav-item ${pageContext.request.servletPath == '/patient/doctors' ? 'active' : ''}">
             <i class="fas fa-user-md"></i>
             <span>Rechercher un doctor</span>

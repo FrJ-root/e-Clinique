@@ -78,22 +78,18 @@ public class DoctorScheduleController {
                 requestedDate = LocalDate.now();
             }
 
-            // Set basic data
             result.put("success", true);
             result.put("doctor", doctor);
             result.put("currentDate", requestedDate);
             result.put("viewType", viewType);
 
-            // Add formatted dates for display
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMMM yyyy", Locale.FRANCE);
             result.put("formattedDate", requestedDate.format(formatter));
 
             if ("daily".equals(viewType)) {
-                // Get appointments for the day
                 List<AppointmentDTO> dailyAppointments = appointmentService.getAppointmentsByDoctorAndDate(
                         doctor.getId(), requestedDate);
 
-                // Filter and organize appointments by status
                 Map<String, List<AppointmentDTO>> appointmentsByStatus = dailyAppointments.stream()
                         .collect(Collectors.groupingBy(app -> app.getStatut().toString()));
 
@@ -105,59 +101,46 @@ public class DoctorScheduleController {
                                 LocalDateTime.of(a.getDate(), a.getHeureDebut())))
                         .collect(Collectors.toList()));
 
-                // Get availabilities for the day
-                List<TimeSlotDTO> availableTimeSlots = availabilityService.getAvailabilityForDate(
-                        doctor.getId(), requestedDate);
+                List<TimeSlotDTO> availableTimeSlots = availabilityService.getTimeSlotsForDate(doctor.getId(), requestedDate);
                 result.put("availableTimeSlots", availableTimeSlots);
 
-                // Previous and next day for navigation
                 result.put("previousDate", requestedDate.minusDays(1));
                 result.put("nextDate", requestedDate.plusDays(1));
 
             } else if ("weekly".equals(viewType)) {
-                // Calculate the first day of the week (Monday)
                 LocalDate firstDayOfWeek = requestedDate.with(WeekFields.of(Locale.FRANCE).getFirstDayOfWeek());
 
-                // Calculate the last day of the week (Sunday)
                 LocalDate lastDayOfWeek = firstDayOfWeek.plusDays(6);
 
-                // Format week range for display
                 String weekRange = firstDayOfWeek.format(formatter) + " - " + lastDayOfWeek.format(formatter);
                 result.put("weekRange", weekRange);
 
-                // Create a map of days in the week
                 Map<LocalDate, List<AppointmentDTO>> weeklySchedule = new LinkedHashMap<>();
                 Map<LocalDate, String> formattedDays = new LinkedHashMap<>();
                 DateTimeFormatter dayFormatter = DateTimeFormatter.ofPattern("EEEE dd/MM", Locale.FRANCE);
 
-                // Initialize the map with empty lists for each day
                 for (int i = 0; i < 7; i++) {
                     LocalDate day = firstDayOfWeek.plusDays(i);
                     weeklySchedule.put(day, new ArrayList<>());
                     formattedDays.put(day, day.format(dayFormatter));
                 }
 
-                // Get appointments for the entire week
                 List<AppointmentDTO> weeklyAppointments = appointmentService.getAppointmentsByDoctorAndDateRange(
                         doctor.getId(), firstDayOfWeek, lastDayOfWeek);
 
-                // Organize appointments by day
                 for (AppointmentDTO appointment : weeklyAppointments) {
                     LocalDate appointmentDate = appointment.getDate();
                     weeklySchedule.get(appointmentDate).add(appointment);
                 }
 
-                // Get all availabilities for the week
                 Map<LocalDate, List<AvailabilityDTO>> weeklyAvailabilities = new LinkedHashMap<>();
 
                 for (int i = 0; i < 7; i++) {
                     LocalDate day = firstDayOfWeek.plusDays(i);
-                    // This will combine regular weekly and exceptional availabilities
                     List<AvailabilityDTO> dayAvailabilities = availabilityService.getAvailabilitiesForDate(doctor.getId(), day);
                     weeklyAvailabilities.put(day, dayAvailabilities);
                 }
 
-                // Previous and next week for navigation
                 result.put("previousDate", firstDayOfWeek.minusWeeks(1));
                 result.put("nextDate", firstDayOfWeek.plusWeeks(1));
                 result.put("firstDayOfWeek", firstDayOfWeek);

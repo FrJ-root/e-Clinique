@@ -35,17 +35,6 @@ public class SpecialtyRepository {
         }
     }
 
-    public List<Specialty> findByDepartment(Department department) {
-        EntityManager em = DBConnection.getEntityManager();
-        try {
-            TypedQuery<Specialty> q = em.createQuery("SELECT s FROM Specialty s WHERE s.department = :department", Specialty.class);
-            q.setParameter("department", department);
-            return q.getResultList();
-        } finally {
-            if (em.isOpen()) em.close();
-        }
-    }
-
     public List<Specialty> findAll() {
         EntityManager em = DBConnection.getEntityManager();
         try {
@@ -104,6 +93,38 @@ public class SpecialtyRepository {
             throw e;
         } finally {
             if (em.isOpen()) em.close();
+        }
+    }
+
+    public List<Specialty> findByDepartment(Department department) {
+        EntityManager em = DBConnection.getEntityManager();
+        try {
+            TypedQuery<Specialty> query = em.createQuery(
+                    "SELECT s FROM Specialty s WHERE s.department = :department ORDER BY s.nom",
+                    Specialty.class
+            );
+            query.setParameter("department", department);
+            return query.getResultList();
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
+    }
+
+    public List<Specialty> findByDepartmentId(UUID departmentId) {
+        EntityManager em = DBConnection.getEntityManager();
+        try {
+            TypedQuery<Specialty> query = em.createQuery(
+                    "SELECT s FROM Specialty s WHERE s.department.id = :departmentId ORDER BY s.nom",
+                    Specialty.class
+            );
+            query.setParameter("departmentId", departmentId);
+            return query.getResultList();
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
         }
     }
 

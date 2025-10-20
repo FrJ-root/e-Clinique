@@ -1,6 +1,7 @@
 package com.clinique.service;
 
 import com.clinique.config.DBConnection;
+import com.clinique.enums.AppointmentStatus;
 import com.clinique.repository.AvailabilityRepository;
 import com.clinique.repository.AppointmentRepository;
 import com.clinique.repository.DoctorRepository;
@@ -13,18 +14,16 @@ import com.clinique.entity.Appointment;
 import com.clinique.dto.TimeSlotDTO;
 
 import java.time.DayOfWeek;
+import java.util.*;
 import java.util.stream.Collectors;
 import com.clinique.entity.Doctor;
+import com.clinique.utils.AppointmentValidator;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Optional;
-import java.util.List;
-import java.util.UUID;
 
 public class AvailabilityService {
 
@@ -42,106 +41,8 @@ public class AvailabilityService {
         this.availabilityRepository = new AvailabilityRepository();
     }
 
-    public List<TimeSlotDTO> generateAvailableTimeSlots(UUID doctorId, LocalDate date) {
-        Optional<Doctor> doctorOpt = doctorRepository.findById(doctorId);
-        if (doctorOpt.isEmpty()) {
-            throw new IllegalArgumentException("Docteur non trouvé");
-        }
-
-        Doctor doctor = doctorOpt.get();
-        if (!doctor.isActif()) {
-            throw new IllegalArgumentException("Ce docteur n'est pas disponible actuellement");
-        }
-
-        List<Appointment> existingAppointments = appointmentRepository.findByDoctorAndDate(doctor, date);
-        List<Availability> doctorAvailabilities = availabilityRepository.findByDoctorAndDate(doctor, date);
-
-        boolean hasAbsence = doctorAvailabilities.stream().anyMatch(a -> a.getType() == AvailabilityType.ABSENCE);
-
-        if (hasAbsence) {
-            return new ArrayList<>();
-        }
-
-        List<TimeSlotDTO> availableSlots = new ArrayList<>();
-        LocalDateTime now = LocalDateTime.now();
-        LocalTime currentTime = now.toLocalTime();
-        LocalDate currentDate = now.toLocalDate();
-
-        // If doctor has specific availabilities for this date, use those time ranges
-        List<Availability> dateSpecificAvailabilities = doctorAvailabilities.stream()
-                .filter(a -> a.getType() == AvailabilityType.EXCEPTIONAL ||
-                        (a.getType() == AvailabilityType.REGULAR &&
-                                a.getJourSemaine() == date.getDayOfWeek()))
-                .collect(Collectors.toList());
-
-        if (!dateSpecificAvailabilities.isEmpty()) {
-            for (Availability avail : dateSpecificAvailabilities) {
-                LocalTime startSlot = avail.getHeureDebut();
-
-                while (startSlot.plusMinutes(SLOT_DURATION_MINUTES).isBefore(avail.getHeureFin()) ||
-                        startSlot.plusMinutes(SLOT_DURATION_MINUTES).equals(avail.getHeureFin())) {
-
-                    LocalTime endSlot = startSlot.plusMinutes(SLOT_DURATION_MINUTES);
-                    boolean isAvailable = true;
-
-                    // Check against existing appointments
-                    for (Appointment appointment : existingAppointments) {
-                        if (isOverlapping(startSlot, endSlot, appointment.getHeureDebut(), appointment.getHeureFin())) {
-                            isAvailable = false;
-                            break;
-                        }
-                    }
-
-                    // Don't allow booking slots in the past or too close to current time
-                    if (date.equals(currentDate) && startSlot.isBefore(currentTime.plusHours(2))) {
-                        isAvailable = false;
-                    }
-
-                    if (isAvailable) {
-                        TimeSlotDTO slot = new TimeSlotDTO();
-                        slot.setStartTime(LocalDateTime.of(date, startSlot));
-                        slot.setEndTime(LocalDateTime.of(date, endSlot));
-                        slot.setAvailable(true);
-                        availableSlots.add(slot);
-                    }
-
-                    startSlot = endSlot;
-                }
-            }
-        } else {
-            // Use default working hours if no specific availabilities
-            LocalTime startTime = WORKDAY_START;
-
-            while (startTime.plusMinutes(SLOT_DURATION_MINUTES).isBefore(WORKDAY_END) ||
-                    startTime.plusMinutes(SLOT_DURATION_MINUTES).equals(WORKDAY_END)) {
-
-                LocalTime endTime = startTime.plusMinutes(SLOT_DURATION_MINUTES);
-                boolean isAvailable = true;
-
-                for (Appointment appointment : existingAppointments) {
-                    if (isOverlapping(startTime, endTime, appointment.getHeureDebut(), appointment.getHeureFin())) {
-                        isAvailable = false;
-                        break;
-                    }
-                }
-
-                if (date.equals(currentDate) && startTime.isBefore(currentTime.plusHours(2))) {
-                    isAvailable = false;
-                }
-
-                if (isAvailable) {
-                    TimeSlotDTO slot = new TimeSlotDTO();
-                    slot.setStartTime(LocalDateTime.of(date, startTime));
-                    slot.setEndTime(LocalDateTime.of(date, endTime));
-                    slot.setAvailable(true);
-                    availableSlots.add(slot);
-                }
-
-                startTime = endTime;
-            }
-        }
-
-        return availableSlots;
+    private boolean isTimeSlotBooked(Doctor doctor, LocalDate date, LocalTime startTime, LocalTime endTime) {
+        return appointmentRepository.existsByDoctorAndDateAndTimeOverlap(doctor, date, startTime, endTime);
     }
 
     public List<LocalDate> generateAvailableDates(UUID doctorId, int daysAhead) {
@@ -214,28 +115,6 @@ public class AvailabilityService {
                     return dto;
                 })
                 .collect(Collectors.toList());
-    }
-
-    public List<TimeSlotDTO> getAvailabilityForDate(UUID doctorId, LocalDate date) {
-        Doctor doctor = doctorRepository.findById(doctorId)
-                .orElseThrow(() -> new IllegalArgumentException("Docteur non trouvé"));
-
-        List<Availability> availabilities = availabilityRepository.findByDoctorAndDate(doctor, date);
-
-        List<TimeSlotDTO> slots = new ArrayList<>();
-        for (Availability availability : availabilities) {
-            if (availability.getType() == AvailabilityType.ABSENCE) {
-                continue;
-            }
-
-            TimeSlotDTO slot = new TimeSlotDTO();
-            slot.setStartTime(LocalDateTime.of(date, availability.getHeureDebut()));
-            slot.setEndTime(LocalDateTime.of(date, availability.getHeureFin()));
-            slot.setAvailable(availability.getStatut() == AvailabilityStatus.AVAILABLE);
-            slots.add(slot);
-        }
-
-        return slots;
     }
 
     public List<AvailabilityDTO> getAvailabilitiesForDate(UUID doctorId, LocalDate date) {
@@ -364,6 +243,298 @@ public class AvailabilityService {
 
         availabilityRepository.delete(availabilityOpt.get());
         return true;
+    }
+
+    public List<AvailabilityDTO> getAvailabilityForDate(UUID doctorId, LocalDate date) {
+        Doctor doctor = doctorRepository.findById(doctorId)
+                .orElseThrow(() -> new IllegalArgumentException("Docteur non trouvé"));
+
+        // Check for regular weekly availabilities
+        DayOfWeek dayOfWeek = date.getDayOfWeek();
+        List<Availability> regularAvailabilities = new ArrayList<>();
+
+        try {
+            EntityManager em = DBConnection.getEntityManager();
+            try {
+                // Find regular availabilities for this day of week
+                TypedQuery<Availability> q = em.createQuery(
+                        "SELECT a FROM Availability a WHERE a.doctor = :doctor " +
+                                "AND a.type = :type AND a.jourSemaine = :dayOfWeek " +
+                                "ORDER BY a.heureDebut",
+                        Availability.class);
+                q.setParameter("doctor", doctor);
+                q.setParameter("type", AvailabilityType.REGULAR);
+                q.setParameter("dayOfWeek", dayOfWeek);
+                regularAvailabilities = q.getResultList();
+            } finally {
+                if (em.isOpen()) em.close();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        // Get exceptional availabilities or absences for this specific date
+        List<Availability> specificAvailabilities = new ArrayList<>();
+        try {
+            EntityManager em = DBConnection.getEntityManager();
+            try {
+                // Find exceptional availabilities for this specific date
+                TypedQuery<Availability> q = em.createQuery(
+                        "SELECT a FROM Availability a WHERE a.doctor = :doctor " +
+                                "AND (a.type = :exceptional OR a.type = :absence) " +
+                                "AND a.jour = :date ORDER BY a.heureDebut",
+                        Availability.class);
+                q.setParameter("doctor", doctor);
+                q.setParameter("exceptional", AvailabilityType.EXCEPTIONAL);
+                q.setParameter("absence", AvailabilityType.ABSENCE);
+                q.setParameter("date", date);
+                specificAvailabilities = q.getResultList();
+            } finally {
+                if (em.isOpen()) em.close();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        // Combine and convert to DTOs
+        List<Availability> allAvailabilities = new ArrayList<>(regularAvailabilities);
+        allAvailabilities.addAll(specificAvailabilities);
+
+        return allAvailabilities.stream()
+                .map(availability -> {
+                    AvailabilityDTO dto = AvailabilityMapper.toDTO(availability);
+                    // If it's a regular availability, set the date to the requested date
+                    // since regular availabilities don't have a specific date
+                    if (availability.getType() == AvailabilityType.REGULAR) {
+                        dto.setDate(date);
+                    }
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
+    public List<TimeSlotDTO> convertToTimeSlots(List<AvailabilityDTO> availabilities) {
+        List<TimeSlotDTO> timeSlots = new ArrayList<>();
+
+        for (AvailabilityDTO availability : availabilities) {
+            // Skip unavailable time slots
+            if (availability.getStatus() != AvailabilityStatus.AVAILABLE) {
+                continue;
+            }
+
+            // Create a time slot from the availability
+            TimeSlotDTO slot = new TimeSlotDTO();
+            slot.setStartTime(availability.getStartTime().toString());
+            slot.setEndTime(availability.getEndTime().toString());
+            slot.setDisplayTime(availability.getStartTime().toString() + " - " + availability.getEndTime().toString());
+            timeSlots.add(slot);
+        }
+
+        return timeSlots;
+    }
+
+    public List<TimeSlotDTO> getTimeSlotsForDate(UUID doctorId, LocalDate date) {
+        // First get the availabilities
+        List<AvailabilityDTO> availabilities = getAvailabilitiesForDate(doctorId, date);
+
+        // Convert to TimeSlotDTO objects
+        List<TimeSlotDTO> timeSlots = new ArrayList<>();
+
+        for (AvailabilityDTO availability : availabilities) {
+            // Skip unavailable time slots
+            if (availability.getStatus() != AvailabilityStatus.AVAILABLE) {
+                continue;
+            }
+
+            // Handle 30-minute intervals within the availability period
+            LocalTime startTime = availability.getStartTime();
+            LocalTime endTime = availability.getEndTime();
+
+            while (startTime.plusMinutes(30).compareTo(endTime) <= 0) {
+                LocalTime slotEndTime = startTime.plusMinutes(30);
+
+                // Check if this time slot is available (not booked in an appointment)
+                boolean isAvailable = !isTimeSlotBooked(
+                        doctorRepository.findById(doctorId).orElseThrow(),
+                        date,
+                        startTime,
+                        slotEndTime
+                );
+
+                if (isAvailable) {
+                    TimeSlotDTO slot = new TimeSlotDTO();
+                    slot.setStartTime(startTime.toString());
+                    slot.setEndTime(slotEndTime.toString());
+                    slot.setDisplayTime(startTime.toString() + " - " + slotEndTime.toString());
+                    timeSlots.add(slot);
+                }
+
+                // Move to next 30-minute slot
+                startTime = slotEndTime;
+            }
+        }
+
+        return timeSlots;
+    }
+
+    public List<TimeSlotDTO> getAvailableTimeSlotsForBooking(UUID doctorId, LocalDate date) {
+        System.out.println("\n=== Getting Available Time Slots ===");
+        System.out.println("Doctor ID: " + doctorId);
+        System.out.println("Date: " + date);
+        System.out.println("Day of week: " + date.getDayOfWeek());
+
+        List<TimeSlotDTO> allSlots = getAvailableTimeSlots(doctorId, date);
+        System.out.println("Total slots found: " + allSlots.size());
+
+        if (date.equals(LocalDate.now())) {
+            LocalDateTime minValidTime = AppointmentValidator.getMinimumValidAppointmentTime();
+            System.out.println("Filtering for today, min valid time: " + minValidTime);
+
+            List<TimeSlotDTO> filteredSlots = allSlots.stream()
+                    .filter(slot -> {
+                        LocalTime slotTime = LocalTime.parse(slot.getStartTime());
+                        LocalDateTime slotDateTime = LocalDateTime.of(date, slotTime);
+                        boolean isValid = !slotDateTime.isBefore(minValidTime);
+                        if (!isValid) {
+                            System.out.println("  Filtered out slot: " + slot.getStartTime() + " (too soon)");
+                        }
+                        return isValid;
+                    })
+                    .collect(Collectors.toList());
+
+            System.out.println("After filtering: " + filteredSlots.size() + " slots");
+            return filteredSlots;
+        }
+
+        System.out.println("Returning all " + allSlots.size() + " slots\n");
+        return allSlots;
+    }
+
+    public List<TimeSlotDTO> getAvailableTimeSlots(UUID doctorId, LocalDate date) {
+        System.out.println("\n>>> getAvailableTimeSlots called <<<");
+        System.out.println("Doctor ID: " + doctorId);
+        System.out.println("Date: " + date);
+
+        List<TimeSlotDTO> availableSlots = new ArrayList<>();
+
+        try {
+            Doctor doctor = doctorRepository.findById(doctorId)
+                    .orElseThrow(() -> new IllegalArgumentException("Docteur non trouvé"));
+
+            // Get day of week value
+            int dayOfWeek = date.getDayOfWeek().getValue();
+
+            // Find availabilities for this day of week
+            List<Availability> availabilities = appointmentRepository.findByDoctorAndDayOfWeek(doctor, dayOfWeek);
+            System.out.println("Found " + availabilities.size() + " availability records");
+
+            if (availabilities.isEmpty()) {
+                return availableSlots;
+            }
+
+            // Merge overlapping availability periods
+            List<TimeRange> mergedPeriods = mergeAvailabilityPeriods(availabilities);
+            System.out.println("Merged into " + mergedPeriods.size() + " periods");
+
+            // Get existing appointments
+            List<Appointment> appointments = appointmentRepository.findByDoctorAndDate(doctor, date);
+            System.out.println("Found " + appointments.size() + " existing appointments");
+
+            // Generate slots for each merged period
+            for (TimeRange period : mergedPeriods) {
+                LocalTime startTime = period.start;
+                LocalTime endTime = period.end;
+
+                System.out.println("Generating slots for period: " + startTime + " - " + endTime);
+
+                // Generate 30-minute slots
+                while (startTime.plusMinutes(30).compareTo(endTime) <= 0) {
+                    LocalTime slotEndTime = startTime.plusMinutes(30);
+
+                    boolean isAvailable = true;
+
+                    // Check if slot conflicts with any appointment
+                    for (Appointment appt : appointments) {
+                        if (appt.getStatut() == AppointmentStatus.CANCELED) {
+                            continue;
+                        }
+
+                        if ((startTime.isBefore(appt.getHeureFin()) && slotEndTime.isAfter(appt.getHeureDebut())) ||
+                                startTime.equals(appt.getHeureDebut())) {
+                            isAvailable = false;
+                            break;
+                        }
+                    }
+
+                    if (isAvailable) {
+                        TimeSlotDTO slot = new TimeSlotDTO();
+                        slot.setStartTime(startTime.toString());
+                        slot.setEndTime(slotEndTime.toString());
+                        slot.setDisplayTime(startTime.toString() + " - " + slotEndTime.toString());
+                        availableSlots.add(slot);
+                    }
+
+                    startTime = slotEndTime;
+                }
+            }
+
+            System.out.println("Total available slots: " + availableSlots.size());
+
+        } catch (Exception e) {
+            System.err.println("✗ ERROR in getAvailableTimeSlots:");
+            e.printStackTrace();
+        }
+
+        return availableSlots;
+    }
+
+    // Helper class for time ranges
+    private static class TimeRange {
+        LocalTime start;
+        LocalTime end;
+
+        TimeRange(LocalTime start, LocalTime end) {
+            this.start = start;
+            this.end = end;
+        }
+    }
+
+    // Merge overlapping or adjacent availability periods
+    private List<TimeRange> mergeAvailabilityPeriods(List<Availability> availabilities) {
+        if (availabilities.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // Sort by start time
+        List<Availability> sorted = new ArrayList<>(availabilities);
+        sorted.sort(Comparator.comparing(Availability::getHeureDebut));
+
+        List<TimeRange> merged = new ArrayList<>();
+        TimeRange current = new TimeRange(
+                sorted.get(0).getHeureDebut(),
+                sorted.get(0).getHeureFin()
+        );
+
+        for (int i = 1; i < sorted.size(); i++) {
+            Availability avail = sorted.get(i);
+
+            // If current period overlaps or is adjacent to next period, merge them
+            if (avail.getHeureDebut().compareTo(current.end) <= 0) {
+                // Extend current period if needed
+                if (avail.getHeureFin().isAfter(current.end)) {
+                    current.end = avail.getHeureFin();
+                }
+            } else {
+                // No overlap, add current and start new period
+                merged.add(current);
+                current = new TimeRange(avail.getHeureDebut(), avail.getHeureFin());
+            }
+        }
+
+        // Add the last period
+        merged.add(current);
+
+        return merged;
     }
 
 }

@@ -29,7 +29,7 @@ public class DoctorSearchController {
 
         try {
             List<DepartmentDTO> departments = departmentService.findAll();
-            List<SpecialtyDTO> specialties = specialtyService.findAll();
+            List<SpecialtyDTO> specialties = specialtyService.getAllSpecialties();
 
             result.put("success", true);
             result.put("departments", departments);
@@ -37,7 +37,7 @@ public class DoctorSearchController {
 
         } catch (Exception ex) {
             result.put("success", false);
-            result.put("error", "Erreur lors de la récupération des données de recherche");
+            result.put("error", "Erreur lors du chargement des données");
         }
 
         return result;

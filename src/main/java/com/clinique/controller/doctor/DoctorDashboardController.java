@@ -98,8 +98,7 @@ public class DoctorDashboardController {
                 }
             }
 
-            List<TimeSlotDTO> availableSlots = availabilityService.getAvailabilityForDate(doctor.getId(), selectedDate);
-
+            List<TimeSlotDTO> availableSlots = availabilityService.getTimeSlotsForDate(doctor.getId(), selectedDate);
             result.put("success", true);
             result.put("doctor", doctor);
             result.put("today", today);

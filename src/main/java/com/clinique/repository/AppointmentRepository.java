@@ -9,6 +9,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import com.clinique.config.DBConnection;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -92,19 +93,48 @@ public class AppointmentRepository {
     public Appointment save(Appointment appointment) {
         EntityManager em = DBConnection.getEntityManager();
         try {
+            System.out.println("Starting transaction...");
             em.getTransaction().begin();
+
             if (appointment.getId() == null) {
+                System.out.println("Persisting new appointment");
+                System.out.println("  Date: " + appointment.getDate());
+                System.out.println("  Start: " + appointment.getHeureDebut());
+                System.out.println("  End: " + appointment.getHeureFin());
+                System.out.println("  Patient: " + (appointment.getPatient() != null ? appointment.getPatient().getId() : "NULL"));
+                System.out.println("  Doctor: " + (appointment.getDoctor() != null ? appointment.getDoctor().getId() : "NULL"));
+                System.out.println("  Status: " + appointment.getStatut());
+                System.out.println("  Motif: " + appointment.getMotif());
+
                 em.persist(appointment);
             } else {
+                System.out.println("Merging existing appointment: " + appointment.getId());
                 appointment = em.merge(appointment);
             }
+
+            System.out.println("Flushing...");
+            em.flush();
+
+            System.out.println("Committing transaction...");
             em.getTransaction().commit();
+
+            System.out.println("✓ Transaction committed successfully");
             return appointment;
+
         } catch (Exception ex) {
-            if (em.getTransaction().isActive()) em.getTransaction().rollback();
-            throw ex;
+            System.err.println("✗ ERROR in save():");
+            ex.printStackTrace();
+
+            if (em.getTransaction().isActive()) {
+                System.err.println("Rolling back transaction...");
+                em.getTransaction().rollback();
+            }
+
+            throw new RuntimeException("Error while saving appointment: " + ex.getMessage(), ex);
         } finally {
-            if (em.isOpen()) em.close();
+            if (em.isOpen()) {
+                em.close();
+            }
         }
     }
 
@@ -115,7 +145,7 @@ public class AppointmentRepository {
             TypedQuery<Appointment> q = em.createQuery(
                     "SELECT a FROM Appointment a WHERE a.doctor = :doctor AND " +
                             "((a.date > :currentDate) OR (a.date = :currentDate AND a.heureFin > :currentTime)) AND " +
-                            "a.status = :plannedStatus ORDER BY a.date ASC, a.heureDebut ASC",
+                            "a.statut = :plannedStatus ORDER BY a.date ASC, a.heureDebut ASC",
                     Appointment.class);
             q.setParameter("doctor", doctor);
             q.setParameter("currentDate", now.toLocalDate());
@@ -230,12 +260,82 @@ public class AppointmentRepository {
     public List<Availability> findByDoctorAndDayOfWeek(Doctor doctor, int dayOfWeek) {
         EntityManager em = DBConnection.getEntityManager();
         try {
+            // Convert day of week number to DayOfWeek enum
+            DayOfWeek day = DayOfWeek.of(dayOfWeek);
+
             TypedQuery<Availability> query = em.createQuery(
-                    "SELECT a FROM Availability a WHERE a.doctor = :doctor AND a.dayOfWeek = :dayOfWeek",
-                    Availability.class);
+                    "SELECT a FROM Availability a " +
+                            "WHERE a.doctor = :doctor " +
+                            "AND a.type = 'REGULAR' " +
+                            "AND a.jourSemaine = :dayOfWeek " +
+                            "ORDER BY a.heureDebut",
+                    Availability.class
+            );
             query.setParameter("doctor", doctor);
-            query.setParameter("dayOfWeek", dayOfWeek);
+            query.setParameter("dayOfWeek", day);
+
             return query.getResultList();
+        } finally {
+            if (em.isOpen()) em.close();
+        }
+    }
+
+    public boolean hasActiveAppointmentWithDoctor(Patient patient, Doctor doctor) {
+        EntityManager em = DBConnection.getEntityManager();
+        try {
+            LocalDate today = LocalDate.now();
+            LocalTime now = LocalTime.now();
+
+            TypedQuery<Long> query = em.createQuery(
+                    "SELECT COUNT(a) FROM Appointment a " +
+                            "WHERE a.patient = :patient " +
+                            "AND a.doctor = :doctor " +
+                            "AND a.statut = :plannedStatus " +
+                            "AND ((a.date > :today) OR (a.date = :today AND a.heureDebut > :now))",
+                    Long.class
+            );
+
+            query.setParameter("patient", patient);
+            query.setParameter("doctor", doctor);
+            query.setParameter("plannedStatus", AppointmentStatus.PLANNED);
+            query.setParameter("today", today);
+            query.setParameter("now", now);
+
+            Long count = query.getSingleResult();
+
+            System.out.println("Active appointments with doctor " + doctor.getNom() + ": " + count);
+
+            return count > 0;
+
+        } finally {
+            if (em.isOpen()) em.close();
+        }
+    }
+
+    public List<Appointment> getActiveAppointmentsWithDoctor(Patient patient, Doctor doctor) {
+        EntityManager em = DBConnection.getEntityManager();
+        try {
+            LocalDate today = LocalDate.now();
+            LocalTime now = LocalTime.now();
+
+            TypedQuery<Appointment> query = em.createQuery(
+                    "SELECT a FROM Appointment a " +
+                            "WHERE a.patient = :patient " +
+                            "AND a.doctor = :doctor " +
+                            "AND a.statut = :plannedStatus " +
+                            "AND ((a.date > :today) OR (a.date = :today AND a.heureDebut > :now)) " +
+                            "ORDER BY a.date ASC, a.heureDebut ASC",
+                    Appointment.class
+            );
+
+            query.setParameter("patient", patient);
+            query.setParameter("doctor", doctor);
+            query.setParameter("plannedStatus", AppointmentStatus.PLANNED);
+            query.setParameter("today", today);
+            query.setParameter("now", now);
+
+            return query.getResultList();
+
         } finally {
             if (em.isOpen()) em.close();
         }
