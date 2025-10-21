@@ -1,19 +1,17 @@
 package com.clinique.controller.admin;
 
-import com.clinique.dto.DepartmentDTO;
 import com.clinique.dto.HolidayDTO;
 import com.clinique.dto.SpecialtyDTO;
 import com.clinique.dto.SystemSettingDTO;
-import com.clinique.service.DepartmentService;
 import com.clinique.service.HolidayService;
 import com.clinique.service.SpecialtyService;
 import com.clinique.service.SystemSettingService;
 import jakarta.servlet.http.HttpServletRequest;
+import com.clinique.service.DepartmentService;
 import jakarta.servlet.http.HttpSession;
+import com.clinique.dto.DepartmentDTO;
 import com.clinique.dto.UserDTO;
-
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public class AdminConfigController {

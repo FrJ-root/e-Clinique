@@ -47,7 +47,6 @@ public class DoctorScheduleServlet extends HttpServlet {
             currentDate = LocalDate.now();
         }
 
-        // Navigation dates
         LocalDate previousDate = "weekly".equals(viewType) ? currentDate.minusWeeks(1) : currentDate.minusDays(1);
         LocalDate nextDate = "weekly".equals(viewType) ? currentDate.plusWeeks(1) : currentDate.plusDays(1);
 
@@ -57,26 +56,21 @@ public class DoctorScheduleServlet extends HttpServlet {
 
         req.setAttribute("viewType", viewType);
 
-        // Format date for display
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("EEEE d MMMM yyyy", Locale.FRENCH);
         req.setAttribute("formattedDate", currentDate.format(dateFormatter));
 
-        // For daily view
         if ("daily".equals(viewType)) {
             List<AppointmentDTO> appointments = appointmentService.findByDoctorAndDate(doctorId, currentDate);
             req.setAttribute("appointments", appointments);
 
-            // Available slots for the day
             List<TimeSlotDTO> availableTimeSlots = availabilityService.getAvailableTimeSlotsForBooking(doctorId, currentDate);
             req.setAttribute("availableTimeSlots", availableTimeSlots);
 
-        } else { // weekly view
-            // Build week range
+        } else {
             LocalDate weekStart = currentDate.with(DayOfWeek.MONDAY);
             LocalDate weekEnd = currentDate.with(DayOfWeek.SUNDAY);
             req.setAttribute("weekRange", weekStart.format(DateTimeFormatter.ofPattern("dd/MM")) + " - " + weekEnd.format(DateTimeFormatter.ofPattern("dd/MM")));
 
-            // For each day, list appointments
             Map<LocalDate, List<AppointmentDTO>> weeklySchedule = new LinkedHashMap<>();
             Map<LocalDate, String> formattedDays = new LinkedHashMap<>();
             for (int i = 0; i < 7; i++) {
@@ -89,7 +83,6 @@ public class DoctorScheduleServlet extends HttpServlet {
             req.setAttribute("formattedDays", formattedDays);
         }
 
-        // Next 5 upcoming appointments (for quick view)
         List<AppointmentDTO> upcomingAppointments = appointmentService.findUpcomingByDoctor(doctorId);
         req.setAttribute("upcomingAppointments", upcomingAppointments);
 

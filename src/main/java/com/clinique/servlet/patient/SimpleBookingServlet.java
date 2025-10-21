@@ -57,7 +57,6 @@ public class SimpleBookingServlet extends HttpServlet {
         System.out.println("SimpleBookingServlet.doGet() - START");
         System.out.println("==========================================");
 
-        // Check session
         HttpSession session = req.getSession(false);
         if (session == null || session.getAttribute("user") == null) {
             System.out.println("No session, redirecting to login");
@@ -75,7 +74,6 @@ public class SimpleBookingServlet extends HttpServlet {
         PatientDTO patient = (PatientDTO) userObj;
         System.out.println("Patient: " + patient.getNom());
 
-        // Get parameters
         String departmentIdStr = req.getParameter("departmentId");
         String specialtyIdStr = req.getParameter("specialtyId");
         String doctorIdStr = req.getParameter("doctorId");
@@ -88,7 +86,6 @@ public class SimpleBookingServlet extends HttpServlet {
         System.out.println("  date: " + dateStr);
 
         try {
-            // STEP 1: Load departments
             List<DepartmentDTO> departments = new ArrayList<>();
             try {
                 departments = departmentService.getDepartmentsWithDoctors();
@@ -99,7 +96,6 @@ public class SimpleBookingServlet extends HttpServlet {
             }
             req.setAttribute("departments", departments);
 
-            // STEP 2: Load specialties
             if (departmentIdStr != null && !departmentIdStr.isEmpty()) {
                 try {
                     UUID departmentId = UUID.fromString(departmentIdStr);
@@ -113,7 +109,6 @@ public class SimpleBookingServlet extends HttpServlet {
                 }
             }
 
-            // STEP 3: Load doctors
             if (specialtyIdStr != null && !specialtyIdStr.isEmpty()) {
                 try {
                     UUID specialtyId = UUID.fromString(specialtyIdStr);
@@ -127,7 +122,6 @@ public class SimpleBookingServlet extends HttpServlet {
                 }
             }
 
-            // STEP 4: Load doctor and dates
             if (doctorIdStr != null && !doctorIdStr.isEmpty()) {
                 System.out.println("\n>>> LOADING DOCTOR AND DATES <<<");
 
@@ -138,7 +132,6 @@ public class SimpleBookingServlet extends HttpServlet {
                     UUID doctorId = UUID.fromString(doctorIdStr);
                     System.out.println("Doctor UUID: " + doctorId);
 
-                    // Load doctor
                     try {
                         doctor = doctorService.findById(doctorId);
                         if (doctor != null) {
@@ -155,7 +148,6 @@ public class SimpleBookingServlet extends HttpServlet {
                         req.setAttribute("error", "Erreur: " + e.getMessage());
                     }
 
-                    // Load dates
                     if (doctor != null) {
                         try {
                             System.out.println("Generating available dates...");
@@ -163,12 +155,10 @@ public class SimpleBookingServlet extends HttpServlet {
                             System.out.println("✓ Generated " + availableDates.size() + " dates");
 
                             if (availableDates.isEmpty()) {
-                                // Generate some default dates if none exist
                                 System.out.println("⚠ No dates from service, generating defaults");
                                 LocalDate today = LocalDate.now();
                                 for (int i = 1; i <= 14; i++) {
                                     LocalDate date = today.plusDays(i);
-                                    // Skip weekends
                                     if (date.getDayOfWeek().getValue() < 6) {
                                         availableDates.add(date);
                                     }
@@ -195,7 +185,6 @@ public class SimpleBookingServlet extends HttpServlet {
                 System.out.println(">>> END LOADING DOCTOR AND DATES <<<\n");
             }
 
-            // STEP 5: Load time slots
             if (dateStr != null && !dateStr.isEmpty() && doctorIdStr != null) {
                 System.out.println("\n>>> LOADING TIME SLOTS <<<");
 
@@ -229,7 +218,6 @@ public class SimpleBookingServlet extends HttpServlet {
             System.err.println("✗ FATAL ERROR in doGet:");
             e.printStackTrace();
 
-            // Send error page
             resp.setContentType("text/html;charset=UTF-8");
             PrintWriter out = resp.getWriter();
             out.println("<html><body>");
@@ -287,11 +275,9 @@ public class SimpleBookingServlet extends HttpServlet {
             resp.sendRedirect(req.getContextPath() + "/patient/appointments");
 
         } catch (IllegalArgumentException e) {
-            // Handle validation errors (including duplicate appointment check)
             System.err.println("✗ Validation error: " + e.getMessage());
             req.setAttribute("error", e.getMessage());
 
-            // Preserve the form data so user can try a different doctor/date
             req.setAttribute("selectedDoctorId", req.getParameter("doctorId"));
             req.setAttribute("selectedDate", req.getParameter("date"));
 

@@ -41,7 +41,6 @@ public class PatientAppointmentsServlet extends HttpServlet {
 
         Map<String, Object> result = controller.getDashboardData(req);
 
-        // Get all appointments
         List<AppointmentDTO> allAppointments = (List<AppointmentDTO>) result.get("allAppointments");
 
         if (allAppointments == null) {
@@ -50,7 +49,6 @@ public class PatientAppointmentsServlet extends HttpServlet {
 
         LocalDateTime now = LocalDateTime.now();
 
-        // Separate upcoming and past appointments
         List<AppointmentDTO> upcomingAppointments = allAppointments.stream()
                 .filter(appointment ->
                         appointment.getStatut() == AppointmentStatus.PLANNED &&
@@ -71,18 +69,15 @@ public class PatientAppointmentsServlet extends HttpServlet {
                 )
                 .collect(Collectors.toList());
 
-        // Add attributes for the view
         req.setAttribute("upcomingAppointments", upcomingAppointments);
         req.setAttribute("pastAppointments", pastAppointments);
 
-        // Add success message if available
         String successMessage = (String) session.getAttribute("successMessage");
         if (successMessage != null) {
             req.setAttribute("successMessage", successMessage);
             session.removeAttribute("successMessage");
         }
 
-        // Forward to the appointment list view
         req.getRequestDispatcher("/WEB-INF/views/patient/appointments-list.jsp").forward(req, resp);
     }
 }

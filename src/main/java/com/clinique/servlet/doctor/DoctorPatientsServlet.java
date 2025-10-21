@@ -57,7 +57,6 @@ public class DoctorPatientsServlet extends HttpServlet {
 
             req.getRequestDispatcher("/WEB-INF/views/doctor/patient-details.jsp").forward(req, resp);
         } else {
-            // Standard patients list page
             Map<String, Object> result = controller.getPatientsData(req);
 
             for (Map.Entry<String, Object> entry : result.entrySet()) {

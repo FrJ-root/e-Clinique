@@ -37,18 +37,14 @@ public class AvailableDatesApiServlet extends HttpServlet {
 
             UUID doctorId = UUID.fromString(doctorIdStr);
 
-            // Get start date from request or use current date
             LocalDate startDate = LocalDate.now();
             String startDateStr = req.getParameter("startDate");
             if (startDateStr != null && !startDateStr.isEmpty()) {
                 try {
                     startDate = LocalDate.parse(startDateStr);
-                } catch (DateTimeParseException e) {
-                    // Use default (today) if parsing fails
-                }
+                } catch (DateTimeParseException e) {}
             }
 
-            // Get available dates (limit to 30 days ahead)
             response.put("success", true);
             response.put("dates", availabilityService.generateAvailableDates(doctorId, 30));
             response.put("weekStart", startDate.toString());

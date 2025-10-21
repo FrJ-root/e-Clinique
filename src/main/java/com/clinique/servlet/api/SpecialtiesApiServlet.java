@@ -59,7 +59,6 @@ public class SpecialtiesApiServlet extends HttpServlet {
                 return;
             }
 
-            // Get ALL specialties for this department
             System.out.println("Calling specialtyService.getSpecialtiesByDepartment()...");
             List<SpecialtyDTO> specialties = specialtyService.getSpecialtiesByDepartment(departmentId);
             System.out.println("Service returned " + specialties.size() + " specialties");

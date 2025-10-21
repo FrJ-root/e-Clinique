@@ -1,19 +1,18 @@
 package com.clinique.controller.doctor;
 
+import com.clinique.service.AppointmentService;
+import jakarta.servlet.http.HttpServletRequest;
+import com.clinique.enums.AppointmentStatus;
+import com.clinique.service.PatientService;
+import com.clinique.service.DoctorService;
+import java.time.format.DateTimeFormatter;
+import jakarta.servlet.http.HttpSession;
 import com.clinique.dto.AppointmentDTO;
+import java.util.stream.Collectors;
 import com.clinique.dto.DoctorDTO;
 import com.clinique.dto.UserDTO;
-import com.clinique.enums.AppointmentStatus;
-import com.clinique.service.AppointmentService;
-import com.clinique.service.DoctorService;
-import com.clinique.service.PatientService;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
-
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class DoctorAppointmentsController {
 
@@ -56,7 +55,6 @@ public class DoctorAppointmentsController {
                 return result;
             }
 
-            // Get filter parameters
             String filter = request.getParameter("filter");
             String dateRangeStr = request.getParameter("dateRange");
             LocalDate startDate = null;
@@ -69,19 +67,15 @@ public class DoctorAppointmentsController {
                     try {
                         startDate = LocalDate.parse(dates[0], formatter);
                         endDate = LocalDate.parse(dates[1], formatter);
-                    } catch (Exception e) {
-                        // Invalid date format, ignore
-                    }
+                    } catch (Exception e) {}
                 }
             }
 
-            // Default to today if no valid dates
             if (startDate == null || endDate == null) {
                 startDate = LocalDate.now();
-                endDate = startDate.plusDays(7); // Default to next 7 days
+                endDate = startDate.plusDays(7);
             }
 
-            // Get appointments based on filter
             List<AppointmentDTO> appointments;
             if ("today".equals(filter)) {
                 appointments = appointmentService.getAppointmentsByDoctorAndDate(doctor.getId(), LocalDate.now());
@@ -97,23 +91,19 @@ public class DoctorAppointmentsController {
                 result.put("filterTitle", "Rendez-vous du " + startDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) +
                         " au " + endDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
             } else {
-                // Default to all appointments with more recent first
                 appointments = appointmentService.getAllByDoctor(doctor.getId());
                 result.put("filterTitle", "Tous les rendez-vous");
             }
 
-            // Group appointments by status
             Map<AppointmentStatus, List<AppointmentDTO>> appointmentsByStatus = appointments.stream()
                     .collect(Collectors.groupingBy(AppointmentDTO::getStatut));
 
-            // Count by status
             Map<String, Integer> countByStatus = new HashMap<>();
             countByStatus.put("PLANNED", appointmentsByStatus.getOrDefault(AppointmentStatus.PLANNED, Collections.emptyList()).size());
             countByStatus.put("DONE", appointmentsByStatus.getOrDefault(AppointmentStatus.DONE, Collections.emptyList()).size());
             countByStatus.put("CANCELED", appointmentsByStatus.getOrDefault(AppointmentStatus.CANCELED, Collections.emptyList()).size());
             countByStatus.put("TOTAL", appointments.size());
 
-            // Set result data
             result.put("success", true);
             result.put("doctor", doctor);
             result.put("appointments", appointments);
@@ -161,7 +151,6 @@ public class DoctorAppointmentsController {
                 return result;
             }
 
-            // Get appointment ID and new status
             String appointmentIdStr = request.getParameter("appointmentId");
             String statusStr = request.getParameter("status");
 
@@ -189,10 +178,8 @@ public class DoctorAppointmentsController {
                 return result;
             }
 
-            // Get optional note
             String note = request.getParameter("note");
 
-            // Update appointment status
             AppointmentDTO updatedAppointment = appointmentService.updateAppointmentStatus(
                     appointmentId, doctor.getId(), newStatus, note);
 
@@ -238,7 +225,6 @@ public class DoctorAppointmentsController {
                 return result;
             }
 
-            // Get appointment ID
             String appointmentIdStr = request.getParameter("appointmentId");
 
             if (appointmentIdStr == null) {
@@ -256,27 +242,22 @@ public class DoctorAppointmentsController {
                 return result;
             }
 
-            // Get appointment details
             AppointmentDTO appointment = appointmentService.getAppointment(appointmentId);
 
-            // Security check - verify this appointment belongs to the doctor
             if (!appointment.getDoctorId().equals(doctor.getId())) {
                 result.put("success", false);
                 result.put("error", "Vous n'êtes pas autorisé à voir ce rendez-vous");
                 return result;
             }
 
-            // Get patient details (optional)
             result.put("success", true);
             result.put("appointment", appointment);
 
-            // Try to get medical notes if present
             try {
                 if (appointment.isHasMedicalNote()) {
                     result.put("medicalNote", appointmentService.getMedicalNote(appointmentId));
                 }
             } catch (Exception e) {
-                // Just log the error but continue
                 System.err.println("Error retrieving medical note: " + e.getMessage());
             }
 
@@ -288,4 +269,5 @@ public class DoctorAppointmentsController {
 
         return result;
     }
+
 }

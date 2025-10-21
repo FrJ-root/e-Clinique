@@ -51,13 +51,11 @@ public class DoctorAppointmentsServlet extends HttpServlet {
         String path = req.getServletPath();
 
         if ("/doctor/appointments/details".equals(path)) {
-            // Return appointment details as JSON
             Map<String, Object> result = controller.getAppointmentDetails(req);
             resp.setContentType("application/json");
             resp.setCharacterEncoding("UTF-8");
             resp.getWriter().write(JsonUtils.toJson(result));
         } else {
-            // Standard page rendering
             Map<String, Object> result = controller.getAppointmentsData(req);
 
             for (Map.Entry<String, Object> entry : result.entrySet()) {
@@ -102,14 +100,12 @@ public class DoctorAppointmentsServlet extends HttpServlet {
                 session.setAttribute("errorMessage", result.get("error"));
             }
 
-            // If this is an AJAX request, return JSON
             String xRequestedWith = req.getHeader("X-Requested-With");
             if ("XMLHttpRequest".equals(xRequestedWith)) {
                 resp.setContentType("application/json");
                 resp.setCharacterEncoding("UTF-8");
                 resp.getWriter().write(JsonUtils.toJson(result));
             } else {
-                // Otherwise redirect back to appointments page
                 resp.sendRedirect(req.getContextPath() + "/doctor/appointments");
             }
         }

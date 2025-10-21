@@ -1,24 +1,24 @@
 package com.clinique.controller;
 
-import com.clinique.dto.AppointmentDTO;
-import com.clinique.dto.DoctorDTO;
-import com.clinique.dto.PatientDTO;
-import com.clinique.dto.TimeSlotDTO;
-import com.clinique.service.AppointmentService;
+
 import com.clinique.service.AvailabilityService;
-import com.clinique.service.DoctorService;
+import com.clinique.service.AppointmentService;
 import com.clinique.utils.AppointmentValidator;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
+import com.clinique.service.DoctorService;
+import jakarta.servlet.http.HttpSession;
+import com.clinique.dto.AppointmentDTO;
+import com.clinique.dto.TimeSlotDTO;
+import com.clinique.dto.PatientDTO;
+import com.clinique.dto.DoctorDTO;
+import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.HashMap;
+import java.util.UUID;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 public class AppointmentBookingController {
 
@@ -69,11 +69,9 @@ public class AppointmentBookingController {
                 return result;
             }
 
-            // Use the fixed method that applies the 2-hour validation
             List<TimeSlotDTO> availableSlots = availabilityService.getAvailableTimeSlotsForBooking(doctorId, date);
             List<LocalDate> availableDates = availabilityService.generateAvailableDates(doctorId, 30);
 
-            // Add information about the minimum booking time
             result.put("minBookingHours", 2);
             result.put("currentTime", LocalDateTime.now());
             result.put("minValidTime", AppointmentValidator.getMinimumValidAppointmentTime());

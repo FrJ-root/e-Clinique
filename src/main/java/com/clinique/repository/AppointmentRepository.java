@@ -1,20 +1,19 @@
 package com.clinique.repository;
 
-import com.clinique.entity.Appointment;
-import com.clinique.entity.Availability;
-import com.clinique.entity.Doctor;
-import com.clinique.entity.Patient;
 import com.clinique.enums.AppointmentStatus;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.TypedQuery;
+import com.clinique.entity.Availability;
 import com.clinique.config.DBConnection;
-
+import com.clinique.entity.Appointment;
+import jakarta.persistence.TypedQuery;
+import com.clinique.entity.Patient;
+import com.clinique.entity.Doctor;
+import java.time.LocalDateTime;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.List;
 import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 
 public class AppointmentRepository {
@@ -260,7 +259,6 @@ public class AppointmentRepository {
     public List<Availability> findByDoctorAndDayOfWeek(Doctor doctor, int dayOfWeek) {
         EntityManager em = DBConnection.getEntityManager();
         try {
-            // Convert day of week number to DayOfWeek enum
             DayOfWeek day = DayOfWeek.of(dayOfWeek);
 
             TypedQuery<Availability> query = em.createQuery(

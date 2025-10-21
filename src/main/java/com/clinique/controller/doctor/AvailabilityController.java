@@ -1,19 +1,18 @@
 package com.clinique.controller.doctor;
 
+import com.clinique.service.AvailabilityService;
+import jakarta.servlet.http.HttpServletRequest;
+import java.time.format.DateTimeParseException;
+import com.clinique.enums.AvailabilityStatus;
+import com.clinique.enums.AvailabilityType;
+import com.clinique.service.DoctorService;
+import jakarta.servlet.http.HttpSession;
 import com.clinique.dto.AvailabilityDTO;
 import com.clinique.dto.DoctorDTO;
 import com.clinique.dto.UserDTO;
-import com.clinique.enums.AvailabilityType;
-import com.clinique.enums.AvailabilityStatus;
-import com.clinique.service.AvailabilityService;
-import com.clinique.service.DoctorService;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
-
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.format.DateTimeParseException;
 import java.util.*;
 
 public class AvailabilityController {

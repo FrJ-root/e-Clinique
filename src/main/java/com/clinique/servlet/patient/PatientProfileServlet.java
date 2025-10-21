@@ -19,7 +19,6 @@ public class PatientProfileServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        // Ensure user is logged in
         HttpSession session = req.getSession(false);
         if (session == null || session.getAttribute("user") == null) {
             resp.sendRedirect(req.getContextPath() + "/login");
@@ -40,7 +39,6 @@ public class PatientProfileServlet extends HttpServlet {
             resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Accès réservé aux patients");
             return;
         }
-        // Get patient data from session
         PatientDTO patient = (PatientDTO) userObj;
         req.setAttribute("user", patient);
 
@@ -49,7 +47,6 @@ public class PatientProfileServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        // Process profile update
         Map<String, Object> result = controller.updatePatient(req);
 
         if ((Boolean) result.get("success")) {
@@ -58,7 +55,6 @@ public class PatientProfileServlet extends HttpServlet {
             req.getSession().setAttribute("errorMessage", result.get("error"));
         }
 
-        // Redirect to prevent form resubmission
         resp.sendRedirect(req.getContextPath() + "/patient/profile");
     }
 }

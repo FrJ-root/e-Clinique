@@ -1,26 +1,23 @@
 package com.clinique.service;
 
-import com.clinique.config.DBConnection;
-import com.clinique.dto.AvailabilityDTO;
-import com.clinique.dto.MedicalNoteDTO;
-import com.clinique.dto.TimeSlotDTO;
-import com.clinique.entity.*;
-import com.clinique.mapper.AvailabilityMapper;
-import com.clinique.mapper.MedicalNoteMapper;
-import com.clinique.repository.AppointmentRepository;
 import com.clinique.repository.AvailabilityRepository;
+import com.clinique.repository.AppointmentRepository;
 import com.clinique.repository.PatientRepository;
 import com.clinique.repository.DoctorRepository;
+import com.clinique.utils.AppointmentValidator;
+import com.clinique.mapper.AvailabilityMapper;
+import com.clinique.mapper.MedicalNoteMapper;
 import com.clinique.mapper.AppointmentMapper;
 import com.clinique.enums.AppointmentStatus;
-import com.clinique.dto.AppointmentDTO;
-
-import java.util.stream.Collectors;
-
-import com.clinique.utils.AppointmentValidator;
 import jakarta.persistence.EntityManager;
+import com.clinique.config.DBConnection;
+import com.clinique.dto.AvailabilityDTO;
+import com.clinique.dto.AppointmentDTO;
+import com.clinique.dto.MedicalNoteDTO;
 import jakarta.persistence.TypedQuery;
-
+import com.clinique.dto.TimeSlotDTO;
+import java.util.stream.Collectors;
+import com.clinique.entity.*;
 import java.time.*;
 import java.util.*;
 
@@ -40,7 +37,6 @@ public class AppointmentService {
         System.out.println("End Time: " + endTime);
         System.out.println("Motif: " + motif);
 
-        // Validate patient
         Optional<Patient> patientOpt = patientRepository.findById(patientId);
         if (patientOpt.isEmpty()) {
             throw new IllegalArgumentException("Patient non trouvé");
@@ -52,7 +48,6 @@ public class AppointmentService {
         }
         System.out.println("✓ Patient found: " + patient.getNom());
 
-        // Validate doctor
         Optional<Doctor> doctorOpt = doctorRepository.findById(doctorId);
         if (doctorOpt.isEmpty()) {
             throw new IllegalArgumentException("Docteur non trouvé");
@@ -64,7 +59,6 @@ public class AppointmentService {
         }
         System.out.println("✓ Doctor found: " + doctor.getNom());
 
-        // ✅ NEW: Check if patient already has an active appointment with this doctor
         boolean hasActiveAppointment = appointmentRepository.hasActiveAppointmentWithDoctor(patient, doctor);
         if (hasActiveAppointment) {
             System.err.println("✗ Patient already has an active appointment with this doctor");
@@ -73,9 +67,8 @@ public class AppointmentService {
                             ". Veuillez attendre la fin de votre rendez-vous actuel avant d'en prendre un nouveau avec ce médecin."
             );
         }
-        System.out.println("✓ No active appointments with this doctor");
+        System.out.println("No active appointments with this doctor");
 
-        // Validate time
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime appointmentDateTime = LocalDateTime.of(date, startTime);
 
@@ -86,17 +79,15 @@ public class AppointmentService {
         if (appointmentDateTime.isBefore(now.plusHours(2))) {
             throw new IllegalArgumentException("Les rendez-vous doivent être pris au moins 2 heures à l'avance");
         }
-        System.out.println("✓ Time validation passed");
+        System.out.println("Time validation passed");
 
-        // Check for overlapping appointments
         List<Appointment> overlappingAppointments = appointmentRepository.findOverlappingAppointments(doctor, date, startTime, endTime);
         if (!overlappingAppointments.isEmpty()) {
-            System.err.println("✗ Overlapping appointment found");
+            System.err.println("Overlapping appointment found");
             throw new IllegalArgumentException("Ce créneau est déjà réservé");
         }
-        System.out.println("✓ No overlapping appointments");
+        System.out.println("No overlapping appointments");
 
-        // Create appointment
         try {
             Appointment appointment = new Appointment();
             appointment.setDate(date);
@@ -115,10 +106,65 @@ public class AppointmentService {
             return AppointmentMapper.toDTO(saved);
 
         } catch (Exception e) {
-            System.err.println("✗ ERROR saving appointment:");
+            System.err.println("ERROR saving appointment:");
             e.printStackTrace();
             throw new RuntimeException("Erreur lors de la sauvegarde du rendez-vous: " + e.getMessage(), e);
         }
+    }
+
+    public AppointmentDTO updateAppointmentStatus(UUID appointmentId, UUID doctorId, AppointmentStatus newStatus, String note) {
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Rendez-vous non trouvé"));
+
+        if (!appointment.getDoctor().getId().equals(doctorId)) {
+            throw new IllegalArgumentException("Vous n'êtes pas autorisé à modifier ce rendez-vous");
+        }
+
+        appointment.setStatut(newStatus);
+
+        if (newStatus == AppointmentStatus.DONE && note != null && !note.trim().isEmpty()) {
+            MedicalNote medicalNote = appointment.getMedicalNote();
+            if (medicalNote == null) {
+                medicalNote = new MedicalNote();
+                medicalNote.setAppointment(appointment);
+            }
+            medicalNote.setNote(note);
+            appointment.setMedicalNote(medicalNote);
+        }
+
+        Appointment updated = appointmentRepository.save(appointment);
+
+        return AppointmentMapper.toDTO(updated);
+    }
+
+    public List<AppointmentDTO> getAppointmentsByDoctorAndDateRange(UUID doctorId, LocalDate startDate, LocalDate endDate) {
+        Doctor doctor = doctorRepository.findById(doctorId)
+                .orElseThrow(() -> new IllegalArgumentException("Docteur non trouvé"));
+
+        List<Appointment> appointments = new ArrayList<>();
+
+        try {
+            EntityManager em = DBConnection.getEntityManager();
+            try {
+                TypedQuery<Appointment> q = em.createQuery(
+                        "SELECT a FROM Appointment a WHERE a.doctor = :doctor " +
+                                "AND a.jour >= :startDate AND a.jour <= :endDate " +
+                                "ORDER BY a.jour, a.heureDebut",
+                        Appointment.class);
+                q.setParameter("doctor", doctor);
+                q.setParameter("startDate", startDate);
+                q.setParameter("endDate", endDate);
+                appointments = q.getResultList();
+            } finally {
+                if (em.isOpen()) em.close();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return appointments.stream()
+                .map(AppointmentMapper::toDTO)
+                .collect(Collectors.toList());
     }
 
     public int countCancellationsSince(LocalDate since) {
@@ -127,6 +173,25 @@ public class AppointmentService {
 
     public int countAppointmentsByDate(LocalDate date) {
         return appointmentRepository.countByDate(date);
+    }
+
+    private boolean isTimeSlotBooked(Doctor doctor, LocalDate date, LocalTime start, LocalTime end) {
+        return appointmentRepository.existsByDoctorAndDateAndTimeOverlap(doctor, date, start, end);
+    }
+
+    public List<AppointmentDTO> getCompletedAppointmentsSince(UUID doctorId, LocalDate startDate) {
+        Doctor doctor = doctorRepository.findById(doctorId)
+                .orElseThrow(() -> new IllegalArgumentException("Docteur non trouvé"));
+
+        List<Appointment> appointments = appointmentRepository.findByDoctor(doctor).stream()
+                .filter(a -> a.getStatut() == AppointmentStatus.DONE &&
+                        !a.getDate().isBefore(startDate))
+                .sorted(Comparator.comparing(Appointment::getDate).reversed())
+                .collect(Collectors.toList());
+
+        return appointments.stream()
+                .map(AppointmentMapper::toDTO)
+                .collect(Collectors.toList());
     }
 
     public List<AppointmentDTO> findByDoctorAndDate(UUID doctorId, LocalDate date) {
@@ -141,6 +206,17 @@ public class AppointmentService {
 
     public int countTotalAppointments() {
         return appointmentRepository.countAll();
+    }
+
+    public List<AppointmentDTO> getAppointmentsByDoctorAndDate(UUID doctorId, LocalDate date) {
+        Doctor doctor = doctorRepository.findById(doctorId)
+                .orElseThrow(() -> new IllegalArgumentException("Docteur non trouvé"));
+
+        List<Appointment> appointments = appointmentRepository.findByDoctorAndDate(doctor, date);
+
+        return appointments.stream()
+                .map(AppointmentMapper::toDTO)
+                .collect(Collectors.toList());
     }
 
     public List<AppointmentDTO> findUpcomingByPatient(UUID patientId) {
@@ -255,48 +331,6 @@ public class AppointmentService {
         return 50;
     }
 
-    public List<AppointmentDTO> getAppointmentsByDoctorAndDate(UUID doctorId, LocalDate date) {
-        Doctor doctor = doctorRepository.findById(doctorId)
-                .orElseThrow(() -> new IllegalArgumentException("Docteur non trouvé"));
-
-        List<Appointment> appointments = appointmentRepository.findByDoctorAndDate(doctor, date);
-
-        return appointments.stream()
-                .map(AppointmentMapper::toDTO)
-                .collect(Collectors.toList());
-    }
-
-    public List<AppointmentDTO> getAppointmentsByDoctorAndDateRange(UUID doctorId, LocalDate startDate, LocalDate endDate) {
-        Doctor doctor = doctorRepository.findById(doctorId)
-                .orElseThrow(() -> new IllegalArgumentException("Docteur non trouvé"));
-
-        List<Appointment> appointments = new ArrayList<>();
-
-        try {
-            EntityManager em = DBConnection.getEntityManager();
-            try {
-                // Find appointments in the date range
-                TypedQuery<Appointment> q = em.createQuery(
-                        "SELECT a FROM Appointment a WHERE a.doctor = :doctor " +
-                                "AND a.jour >= :startDate AND a.jour <= :endDate " +
-                                "ORDER BY a.jour, a.heureDebut",
-                        Appointment.class);
-                q.setParameter("doctor", doctor);
-                q.setParameter("startDate", startDate);
-                q.setParameter("endDate", endDate);
-                appointments = q.getResultList();
-            } finally {
-                if (em.isOpen()) em.close();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return appointments.stream()
-                .map(AppointmentMapper::toDTO)
-                .collect(Collectors.toList());
-    }
-
     public List<AppointmentDTO> getAllByDoctor(UUID doctorId) {
         Doctor doctor = doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new IllegalArgumentException("Docteur non trouvé"));
@@ -322,35 +356,6 @@ public class AppointmentService {
         return appointments.stream()
                 .map(AppointmentMapper::toDTO)
                 .collect(Collectors.toList());
-    }
-
-    public AppointmentDTO updateAppointmentStatus(UUID appointmentId, UUID doctorId, AppointmentStatus newStatus, String note) {
-        Appointment appointment = appointmentRepository.findById(appointmentId)
-                .orElseThrow(() -> new IllegalArgumentException("Rendez-vous non trouvé"));
-
-        // Security check - verify this appointment belongs to the doctor
-        if (!appointment.getDoctor().getId().equals(doctorId)) {
-            throw new IllegalArgumentException("Vous n'êtes pas autorisé à modifier ce rendez-vous");
-        }
-
-        // Update appointment status
-        appointment.setStatut(newStatus);
-
-        // If a note was provided and status is DONE, create or update medical note
-        if (newStatus == AppointmentStatus.DONE && note != null && !note.trim().isEmpty()) {
-            MedicalNote medicalNote = appointment.getMedicalNote();
-            if (medicalNote == null) {
-                medicalNote = new MedicalNote();
-                medicalNote.setAppointment(appointment);
-            }
-            medicalNote.setNote(note);
-            appointment.setMedicalNote(medicalNote);
-        }
-
-        // Save changes
-        Appointment updated = appointmentRepository.save(appointment);
-
-        return AppointmentMapper.toDTO(updated);
     }
 
     public MedicalNoteDTO getMedicalNote(UUID appointmentId) {
@@ -385,21 +390,6 @@ public class AppointmentService {
 
         List<Appointment> appointments = appointmentRepository.findByDoctor(doctor).stream()
                 .filter(a -> a.getStatut() == AppointmentStatus.DONE && a.getMedicalNote() == null)
-                .sorted(Comparator.comparing(Appointment::getDate).reversed())
-                .collect(Collectors.toList());
-
-        return appointments.stream()
-                .map(AppointmentMapper::toDTO)
-                .collect(Collectors.toList());
-    }
-
-    public List<AppointmentDTO> getCompletedAppointmentsSince(UUID doctorId, LocalDate startDate) {
-        Doctor doctor = doctorRepository.findById(doctorId)
-                .orElseThrow(() -> new IllegalArgumentException("Docteur non trouvé"));
-
-        List<Appointment> appointments = appointmentRepository.findByDoctor(doctor).stream()
-                .filter(a -> a.getStatut() == AppointmentStatus.DONE &&
-                        !a.getDate().isBefore(startDate))
                 .sorted(Comparator.comparing(Appointment::getDate).reversed())
                 .collect(Collectors.toList());
 
@@ -523,10 +513,6 @@ public class AppointmentService {
 
         return appointment.getDate().isAfter(today) ||
                 (appointment.getDate().isEqual(today) && appointment.getHeureDebut().isAfter(now));
-    }
-
-    private boolean isTimeSlotBooked(Doctor doctor, LocalDate date, LocalTime start, LocalTime end) {
-        return appointmentRepository.existsByDoctorAndDateAndTimeOverlap(doctor, date, start, end);
     }
 
 }

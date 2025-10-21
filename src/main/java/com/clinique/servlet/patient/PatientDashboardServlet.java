@@ -19,14 +19,12 @@ public class PatientDashboardServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        // Ensure user is logged in
         HttpSession session = req.getSession(false);
         if (session == null || session.getAttribute("user") == null) {
             resp.sendRedirect(req.getContextPath() + "/login");
             return;
         }
 
-        // Ensure user is a patient (more flexible check)
         Object userObj = session.getAttribute("user");
         boolean isPatient = false;
 
@@ -42,10 +40,8 @@ public class PatientDashboardServlet extends HttpServlet {
             return;
         }
 
-        // Get dashboard data
         Map<String, Object> result = controller.getDashboardData(req);
 
-        // Forward attributes to JSP
         for (Map.Entry<String, Object> entry : result.entrySet()) {
             req.setAttribute(entry.getKey(), entry.getValue());
         }
